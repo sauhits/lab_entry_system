@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>研究室エントリー</title>
+    <style>
+        body {
+            width: 300px;
+            font-family: sans-serif;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        li {
+            padding: 8px;
+            border-bottom: 1px solid #ccc;
+        }
+
+        button {
+            margin-top: 10px;
+        }
+
+        /* 【追加】フォーム用のスタイル */
+        .form-group {
+            margin-top: 15px;
+        }
+
+        input[type="text"] {
+            width: 95%;
+            padding: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <h3>エントリー可能な研究室</h3>
+    <ul id="lab-list">
+    </ul>
+    <button id="submit-button" disabled>この研究室にエントリーする</button>
+
+    <hr>
+    <h3>エントリー状況</h3>
+    <p id="entry-status">未確認</p>
+
+    <hr>
+    <div class="form-group">
+        <h3>特殊GPAの計算・送信</h3>
+        <input type="text" id="user-id-input" placeholder="ユーザIDを入力">
+        <button id="send-special-gpa-button">特殊GPAを計算・送信</button>
+
+        <p><strong>計算結果:</strong> <span id="special-gpa-display">-</span></p>
+    </div>
+    <script src="dist/popup.js"></script>
+</body>
+
+</html>

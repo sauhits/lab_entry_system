@@ -1,0 +1,20 @@
+{
+  "name": "gpa",
+  "version": "1.0.0",
+  "main": "background.js",
+  "scripts": {
+    "build": "webpack"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "firebase": "^11.9.1"
+  },
+  "description": "",
+  "devDependencies": {
+    "webpack": "^5.99.9",
+    "webpack-cli": "^6.0.1"
+  }
+}
