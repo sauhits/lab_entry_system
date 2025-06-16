@@ -51,12 +51,13 @@ function scrapeGradeData() {
 async function calculateAndSendSpecialGpa(userId) {
   try {
     // 1. Firebaseに重複ユーザIDがないかチェック
+    // 1. Firebaseに重複ユーザID（author_uid）がないかチェック
     const specialGpaRef = collection(db, "special_gpa");
-    const q = query(specialGpaRef, where("userId", "==", userId));
+    const q = query(specialGpaRef, where("author_uid", "==", author_uid));
     const querySnapshot = await getDocs(q);
 
     if (!querySnapshot.empty) {
-      console.log("重複IDが見つかりました:", userId);
+      console.log("重複IDが見つかりました:", author_uid);
       return { success: false, message: "duplicate" };
     }
 
@@ -83,8 +84,8 @@ async function calculateAndSendSpecialGpa(userId) {
 
     // 3. 計算結果をFirebaseに保存
     await addDoc(specialGpaRef, {
-      userId: userId,
-      specialGpa: parseFloat(specialGpa), // 数値として保存
+      author_uid: author_uid, // フィールド名も統一
+      specialGpa: parseFloat(specialGpa),
       submittedAt: serverTimestamp(),
     });
 
@@ -101,12 +102,20 @@ async function calculateAndSendSpecialGpa(userId) {
  */
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "calculateAndSendSpecialGpa") {
-    console.log(
-      "ポップアップから計算依頼を受け取りました。UserID:",
-      request.userId
-    );
-    // calculateAndSendSpecialGpa は Promise を返すので、thenで結果を待ってからsendResponseを呼ぶ
-    calculateAndSendSpecialGpa(request.userId).then(sendResponse);
+    // ポップアップから送られてくるキーが 'author_uid' であることを確認
+    const uid = request.author_uid;
+    console.log("ポップアップから計算依頼を受け取りました。author_uid:", uid);
+
+    // もし uid が undefined でないことを確認してから実行すると、より安全
+    if (uid) {
+      calculateAndSendSpecialGpa(uid).then(sendResponse);
+    } else {
+      console.error("メッセージに 'author_uid' が含まれていません。", request);
+      sendResponse({
+        success: false,
+        message: "リクエストにユーザー情報が含まれていません。",
+      });
+    }
   }
-  return true; // 非同期でsendResponseを呼ぶことを示す
+  return true;
 });

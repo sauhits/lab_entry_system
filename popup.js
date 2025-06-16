@@ -85,6 +85,13 @@ document.addEventListener("DOMContentLoaded", () => {
     logoutButton.addEventListener("click", () => signOut(auth));
 
     sendSpecialGpaButton.addEventListener("click", async () => {
+      const user = auth.currentUser; // 現在ログイン中のユーザー情報を取得
+      if (!user) {
+        alert("ログインしていません。");
+        return;
+      }
+
+      const loggedInUserUid = user.uid; // ユーザー固有の認証IDを取得
       const [tab] = await chrome.tabs.query({
         active: true,
         currentWindow: true,
@@ -97,20 +104,16 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      // ユーザーID（この場合は認証ユーザーのUIDを使用するのが望ましい）
-      // ここでは入力されたIDをそのまま使います
-      const customUserId = userIdInput.value.trim();
-      if (!customUserId) {
-        alert("ユーザIDを入力してください。");
-        return;
-      }
-
       const specialGpaDisplay = document.getElementById("special-gpa-display");
       specialGpaDisplay.textContent = "計算・送信中...";
 
+      // content_script.jsに、手入力IDの代わりに認証IDを送る
       chrome.tabs.sendMessage(
         tab.id,
-        { action: "calculateAndSendSpecialGpa", userId: customUserId },
+        {
+          action: "calculateAndSendSpecialGpa",
+          author_uid: loggedInUserUid, // 送るデータのキーも統一
+        },
         (response) => {
           if (chrome.runtime.lastError) {
             console.error(chrome.runtime.lastError.message);
