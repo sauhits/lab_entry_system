@@ -4,19 +4,14 @@
   "version": "2.2",
   "description": "GPAの取得と研究室エントリーを支援します。",
   "permissions": ["storage", "activeTab", "scripting"],
-  "host_permissions": [
-  "https://gakujo.shizuoka.ac.jp/lcu-web/*"
-],
+  "host_permissions": ["https://gakujo.shizuoka.ac.jp/lcu-web/*"],
   "action": {
     "default_popup": "popup.html"
   },
   "content_scripts": [
     {
-      "matches": ["https://gakujo.shizuoka.ac.jp/lcu-web/SC_10004B00_01"],
+      "matches": ["https://gakujo.shizuoka.ac.jp/lcu-web/*"],
       "js": ["dist/content_script.js"]
     }
-  ],
-  "background": {
-    "service_worker": "background.js"
-  }
+  ]
 }

@@ -15,15 +15,15 @@ import {
 } from "firebase/auth";
 
 document.addEventListener("DOMContentLoaded", () => {
-  // --- HTML要素の取得（ログイン画面） ---
+  // HTML要素の取得（ログイン画面）
   const loginView = document.getElementById("login-view");
   const mainView = document.getElementById("main-view");
   const loginEmail = document.getElementById("login-email");
   const loginPassword = document.getElementById("login-password");
-  const loginButton = document.getElementById("login-button");
   const loginError = document.getElementById("login-error");
 
-  // --- ログイン処理 ---
+  // ログイン・ログアウト処理
+  const loginButton = document.getElementById("login-button");
   loginButton.addEventListener("click", () => {
     const email = loginEmail.value;
     const password = loginPassword.value;
@@ -42,27 +42,22 @@ document.addEventListener("DOMContentLoaded", () => {
       });
   });
 
-  // ======================================================================
-  // ★★★ 認証状態を監視し、UIを切り替えるリスナー ★★★
-  // ======================================================================
+  // 認証状態を監視するリスナー
   onAuthStateChanged(auth, (user) => {
     if (user) {
-      // --- ログインしている場合の処理 ---
       loginView.style.display = "none";
       mainView.style.display = "block";
-      initializeMainFeatures(user); // ★メイン機能を呼び出す
+      initializeMainFeatures(user);
     } else {
-      // --- ログアウトしている場合の処理 ---
       loginView.style.display = "block";
       mainView.style.display = "none";
     }
   });
 
   /**
-   * メインの機能（研究室リスト取得など）を初期化する関数
-   * @param {object} user - ログインしているユーザーの情報
+   * ログイン後にメイン機能を初期化する関数
    */
-  async function initializeMainFeatures(user) {
+  function initializeMainFeatures(user) {
     console.log(`${user.email} (${user.uid}) のための機能を開始します。`);
 
     // --- メイン機能で使うHTML要素の取得 ---
@@ -71,71 +66,87 @@ document.addEventListener("DOMContentLoaded", () => {
     const labList = document.getElementById("lab-list");
     const submitButton = document.getElementById("submit-button");
     const entryStatus = document.getElementById("entry-status");
-    const userIdInput = document.getElementById("user-id-input");
     const sendSpecialGpaButton = document.getElementById(
       "send-special-gpa-button"
     );
+    const specialGpaDisplay = document.getElementById("special-gpa-display");
     let selectedLabId = null;
     let selectedLabName = null;
 
-    // ログインユーザー情報を表示
     userEmailDisplay.textContent = user.email;
-
-    // --- イベントリスナーの設定 ---
     logoutButton.addEventListener("click", () => signOut(auth));
 
-    sendSpecialGpaButton.addEventListener("click", async () => {
-      const user = auth.currentUser; // 現在ログイン中のユーザー情報を取得
-      if (!user) {
-        alert("ログインしていません。");
-        return;
-      }
-
-      const loggedInUserUid = user.uid; // ユーザー固有の認証IDを取得
-      const [tab] = await chrome.tabs.query({
-        active: true,
-        currentWindow: true,
-      });
-
-      // 成績ページかどうかのチェック
-      const targetUrl = "https://gakujo.shizuoka.ac.jp/lcu-web/SC_10004B00_01";
-      if (tab.url !== targetUrl) {
-        alert("この機能は大学の成績ページで実行してください。");
-        return;
-      }
-
-      const specialGpaDisplay = document.getElementById("special-gpa-display");
-      specialGpaDisplay.textContent = "計算・送信中...";
-
-      // content_script.jsに、手入力IDの代わりに認証IDを送る
-      chrome.tabs.sendMessage(
-        tab.id,
-        {
-          action: "calculateAndSendSpecialGpa",
-          author_uid: loggedInUserUid, // 送るデータのキーも統一
-        },
-        (response) => {
-          if (chrome.runtime.lastError) {
-            console.error(chrome.runtime.lastError.message);
-            specialGpaDisplay.textContent = "エラー";
-            alert(
-              "スクリプトとの通信に失敗しました。ページをリロードしてみてください。"
-            );
-            return;
-          }
-          if (response.success) {
-            specialGpaDisplay.textContent = response.specialGpa;
-            alert("特殊GPAの計算と送信が完了しました！");
-          } else if (response.message === "duplicate") {
-            specialGpaDisplay.textContent = "すでに書き込まれています";
-          } else {
-            specialGpaDisplay.textContent = "処理に失敗しました";
-            alert(response.message || "不明なエラーが発生しました。");
-          }
+    // --- 「特殊GPAを計算・送信」ボタンの処理 ---
+    sendSpecialGpaButton.addEventListener("click", () => {
+      specialGpaDisplay.textContent = "成績データ取得中...";
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        const activeTab = tabs[0];
+        const targetUrl =
+          "https://gakujo.shizuoka.ac.jp/lcu-web/SC_10004B00_01*";
+        if (activeTab.url !== targetUrl) {
+          alert("この機能は大学の成績ページで実行してください。");
+          specialGpaDisplay.textContent = "-";
+          return;
         }
-      );
+
+        chrome.tabs.sendMessage(
+          activeTab.id,
+          { action: "scrapeGrades" },
+          async (response) => {
+            if (chrome.runtime.lastError || !response || !response.success) {
+              alert(response?.message || "成績データの取得に失敗しました。");
+              specialGpaDisplay.textContent = "-";
+              return;
+            }
+
+            specialGpaDisplay.textContent = "計算・送信中...";
+            const grades = response.data;
+
+            try {
+              const author_uid = user.uid;
+              const specialGpaRef = collection(db, "special_gpa");
+              const q = query(
+                specialGpaRef,
+                where("author_uid", "==", author_uid)
+              );
+              const querySnapshot = await getDocs(q);
+
+              if (!querySnapshot.empty) {
+                specialGpaDisplay.textContent = "すでに書き込まれています";
+                return;
+              }
+
+              const specialCourseIds = ["T2-ENG101", "T2-SCI203", "SPEC999"];
+              const multiplier = 1.5;
+              let totalPoints = 0;
+              grades.forEach((grade) => {
+                let point = grade.GP;
+                if (specialCourseIds.includes(grade.科目id)) {
+                  point *= multiplier;
+                }
+                totalPoints += point;
+              });
+              const specialGpa = (totalPoints / grades.length).toFixed(3);
+
+              await addDoc(specialGpaRef, {
+                author_uid: author_uid,
+                specialGpa: parseFloat(specialGpa),
+                submittedAt: serverTimestamp(),
+              });
+
+              specialGpaDisplay.textContent = specialGpa;
+              alert("特殊GPAの計算と送信が完了しました！");
+            } catch (error) {
+              console.error("特殊GPA処理でエラー:", error);
+              specialGpaDisplay.textContent = "処理に失敗しました";
+              alert("データベースへの書き込み中にエラーが発生しました。");
+            }
+          }
+        );
+      });
     });
 
+    // --- 「研究室にエントリー」関連の処理（変更なし） ---
     submitButton.addEventListener("click", async () => {
       if (!selectedLabId) return;
       try {
@@ -162,8 +173,6 @@ document.addEventListener("DOMContentLoaded", () => {
         alert("エントリーに失敗しました。");
       }
     });
-
-    // --- 関数の定義 ---
     async function fetchEntryStatus() {
       const entriesRef = collection(db, "entries");
       const q = query(entriesRef, where("author_uid", "==", user.uid));
@@ -184,7 +193,6 @@ document.addEventListener("DOMContentLoaded", () => {
         submitButton.disabled = true;
       }
     }
-
     async function fetchLabs() {
       labList.textContent = "研究室リストを読み込み中...";
       try {
