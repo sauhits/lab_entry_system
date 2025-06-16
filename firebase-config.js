@@ -3,6 +3,7 @@
 // Firebaseのライブラリから必要な関数をインポート
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAGllMEcfBpFlaPVvbaQr0sTJ17_hA4BI0",
@@ -18,3 +19,4 @@ const app = initializeApp(firebaseConfig);
 
 // Firestoreデータベースへの参照を取得し、他のファイルで使えるようにエクスポート
 export const db = getFirestore(app);
+export const auth = getAuth(app);
