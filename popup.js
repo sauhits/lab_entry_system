@@ -82,9 +82,12 @@ document.addEventListener("DOMContentLoaded", () => {
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         const activeTab = tabs[0];
         const targetUrl =
-          "https://gakujo.shizuoka.ac.jp/lcu-web/SC_10004B00_01*";
+          "https://gakujo.shizuoka.ac.jp/lcu-web/SC_10004B00_01";
         if (activeTab.url !== targetUrl) {
           alert("この機能は大学の成績ページで実行してください。");
+          console.log(
+            `現在のURL: ${activeTab.url}、期待されるURL: ${targetUrl}`
+          );
           specialGpaDisplay.textContent = "-";
           return;
         }
@@ -95,6 +98,10 @@ document.addEventListener("DOMContentLoaded", () => {
           async (response) => {
             if (chrome.runtime.lastError || !response || !response.success) {
               alert(response?.message || "成績データの取得に失敗しました。");
+              console.error(
+                "成績データ取得のエラー:",
+                chrome.runtime.lastError || response
+              );
               specialGpaDisplay.textContent = "-";
               return;
             }
@@ -198,13 +205,26 @@ document.addEventListener("DOMContentLoaded", () => {
       try {
         const labsCollectionRef = collection(db, "labs");
         const querySnapshot = await getDocs(labsCollectionRef);
-        labList.innerHTML = "";
 
+        const labs = [];
         querySnapshot.forEach((doc) => {
-          const lab = doc.data();
+          labs.push(doc.data());
+        });
+
+        console.log("Firebaseから取得した研究室データ:", labs);
+
+        labList.innerHTML = ""; // リストを一旦空にする
+
+        labs.forEach((lab) => {
           if (lab.isEntryOpen) {
             const li = document.createElement("li");
-            li.textContent = lab.name;
+
+            if (lab.capacity) {
+              li.textContent = `${lab.name} (定員: ${lab.capacity}名)`;
+            } else {
+              li.textContent = lab.name;
+            }
+
             li.addEventListener("click", () => {
               document.querySelectorAll("#lab-list li").forEach((el) => {
                 el.style.backgroundColor = "";
@@ -217,6 +237,7 @@ document.addEventListener("DOMContentLoaded", () => {
             labList.appendChild(li);
           }
         });
+
         if (labList.innerHTML === "") {
           labList.textContent = "エントリー可能な研究室はありません。";
         }
