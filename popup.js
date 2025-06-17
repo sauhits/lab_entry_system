@@ -18,31 +18,22 @@ document.addEventListener("DOMContentLoaded", () => {
   // HTML要素の取得（ログイン画面）
   const loginView = document.getElementById("login-view");
   const mainView = document.getElementById("main-view");
-  const loginEmail = document.getElementById("login-email");
-  const loginPassword = document.getElementById("login-password");
-  const loginError = document.getElementById("login-error");
-
-  // ログイン・ログアウト処理
   const loginButton = document.getElementById("login-button");
+
+  // ログイン処理
   loginButton.addEventListener("click", () => {
+    const loginEmail = document.getElementById("login-email");
+    const loginPassword = document.getElementById("login-password");
+    const loginError = document.getElementById("login-error");
     const email = loginEmail.value;
     const password = loginPassword.value;
-    loginError.textContent = ""; // エラーメッセージをクリア
-
-    signInWithEmailAndPassword(auth, email, password)
-      .then((userCredential) => {
-        // ログイン成功
-        console.log("ログイン成功:", userCredential.user);
-        // UIの切り替えはonAuthStateChangedが自動で行う
-      })
-      .catch((error) => {
-        // ログイン失敗
-        console.error("ログインエラー:", error);
-        loginError.textContent = "メールアドレスまたはパスワードが違います。";
-      });
+    loginError.textContent = "";
+    signInWithEmailAndPassword(auth, email, password).catch((error) => {
+      loginError.textContent = "メールアドレスまたはパスワードが違います。";
+    });
   });
 
-  // 認証状態を監視するリスナー
+  // 認証状態を監視し、UIを切り替えるリスナー
   onAuthStateChanged(auth, (user) => {
     if (user) {
       loginView.style.display = "none";
@@ -153,7 +144,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     });
 
-    // --- 「研究室にエントリー」関連の処理（変更なし） ---
+    // --- 「研究室にエントリー」関連の処理 ---
     submitButton.addEventListener("click", async () => {
       if (!selectedLabId) return;
       try {
@@ -180,6 +171,8 @@ document.addEventListener("DOMContentLoaded", () => {
         alert("エントリーに失敗しました。");
       }
     });
+
+    // --- 関数の定義 ---
     async function fetchEntryStatus() {
       const entriesRef = collection(db, "entries");
       const q = query(entriesRef, where("author_uid", "==", user.uid));
@@ -200,6 +193,7 @@ document.addEventListener("DOMContentLoaded", () => {
         submitButton.disabled = true;
       }
     }
+
     async function fetchLabs() {
       labList.textContent = "研究室リストを読み込み中...";
       try {
@@ -247,8 +241,33 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
+    // =======================【ここから関数を追加】=======================
+    /**
+     * ログインユーザーの特殊GPA登録状況を確認し、UIを更新する関数
+     */
+    async function fetchSpecialGpaStatus() {
+      const specialGpaRef = collection(db, "special_gpa");
+      const q = query(specialGpaRef, where("author_uid", "==", user.uid));
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        // データが存在する場合
+        const gpaData = querySnapshot.docs[0].data();
+        specialGpaDisplay.textContent = gpaData.specialGpa.toFixed(3); // 取得した値を表示
+        sendSpecialGpaButton.disabled = true;
+        sendSpecialGpaButton.textContent = "送信済み";
+      } else {
+        // データが存在しない場合
+        specialGpaDisplay.textContent = "-";
+        sendSpecialGpaButton.disabled = false;
+        sendSpecialGpaButton.textContent = "特殊GPAを計算・送信";
+      }
+    }
+    // =======================【ここまで関数を追加】=======================
+
     // --- 初期化処理 ---
     fetchLabs();
     fetchEntryStatus();
+    fetchSpecialGpaStatus(); // ★★★【追加】初期化時にGPAの状況も確認する
   }
 });
