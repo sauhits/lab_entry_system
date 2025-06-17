@@ -10,7 +10,7 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://gakujo.shizuoka.ac.jp/lcu-web/*"],
+      "matches": ["https://gakujo.shizuoka.ac.jp/lcu-web/SC_10004B00_01"],
       "js": ["dist/content_script.js"]
     }
   ]

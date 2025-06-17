@@ -82,7 +82,7 @@ document.addEventListener("DOMContentLoaded", () => {
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         const activeTab = tabs[0];
         const targetUrl =
-          "https://gakujo.shizuoka.ac.jp/lcu-web/SC_10004B00_01*";
+          "https://gakujo.shizuoka.ac.jp/lcu-web/SC_10004B00_01";
         if (activeTab.url !== targetUrl) {
           alert("この機能は大学の成績ページで実行してください。");
           specialGpaDisplay.textContent = "-";
@@ -112,7 +112,10 @@ document.addEventListener("DOMContentLoaded", () => {
               const querySnapshot = await getDocs(q);
 
               if (!querySnapshot.empty) {
-                specialGpaDisplay.textContent = "すでに書き込まれています";
+                // 重複が見つかった場合
+                alert("このアカウントの特殊GPAは既に登録されています。");
+                // 登録済みのGPAを取得・表示してUIを更新する
+                fetchSpecialGpaStatus();
                 return;
               }
 
@@ -193,6 +196,7 @@ document.addEventListener("DOMContentLoaded", () => {
         submitButton.disabled = true;
       }
     }
+
     async function fetchLabs() {
       labList.textContent = "研究室リストを読み込み中...";
       try {
@@ -204,6 +208,13 @@ document.addEventListener("DOMContentLoaded", () => {
           const lab = doc.data();
           if (lab.isEntryOpen) {
             const li = document.createElement("li");
+            // capacityフィールドが存在すれば、定員も一緒に表示する
+            if (lab.capacity) {
+              li.textContent = `${lab.name} (定員: ${lab.capacity}名)`;
+            } else {
+              li.textContent = lab.name;
+            }
+
             li.textContent = lab.name;
             li.addEventListener("click", () => {
               document.querySelectorAll("#lab-list li").forEach((el) => {
@@ -223,6 +234,28 @@ document.addEventListener("DOMContentLoaded", () => {
       } catch (error) {
         console.error("Firebaseからの研究室リスト取得エラー:", error);
         labList.textContent = "リストの読み込みに失敗しました。";
+      }
+    }
+
+    /**
+     * ログインユーザーの特殊GPA登録状況を確認し、UIを更新する関数
+     */
+    async function fetchSpecialGpaStatus() {
+      const specialGpaRef = collection(db, "special_gpa");
+      const q = query(specialGpaRef, where("author_uid", "==", user.uid));
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        // データが存在する場合
+        const gpaData = querySnapshot.docs[0].data();
+        specialGpaDisplay.textContent = gpaData.specialGpa.toFixed(3); // 取得した値を表示
+        sendSpecialGpaButton.disabled = true;
+        sendSpecialGpaButton.textContent = "送信済み";
+      } else {
+        // データが存在しない場合
+        specialGpaDisplay.textContent = "-";
+        sendSpecialGpaButton.disabled = false;
+        sendSpecialGpaButton.textContent = "特殊GPAを計算・送信";
       }
     }
 
