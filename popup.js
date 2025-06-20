@@ -18,31 +18,22 @@ document.addEventListener("DOMContentLoaded", () => {
   // HTML要素の取得（ログイン画面）
   const loginView = document.getElementById("login-view");
   const mainView = document.getElementById("main-view");
-  const loginEmail = document.getElementById("login-email");
-  const loginPassword = document.getElementById("login-password");
-  const loginError = document.getElementById("login-error");
-
-  // ログイン・ログアウト処理
   const loginButton = document.getElementById("login-button");
+
+  // ログイン処理
   loginButton.addEventListener("click", () => {
+    const loginEmail = document.getElementById("login-email");
+    const loginPassword = document.getElementById("login-password");
+    const loginError = document.getElementById("login-error");
     const email = loginEmail.value;
     const password = loginPassword.value;
-    loginError.textContent = ""; // エラーメッセージをクリア
-
-    signInWithEmailAndPassword(auth, email, password)
-      .then((userCredential) => {
-        // ログイン成功
-        console.log("ログイン成功:", userCredential.user);
-        // UIの切り替えはonAuthStateChangedが自動で行う
-      })
-      .catch((error) => {
-        // ログイン失敗
-        console.error("ログインエラー:", error);
-        loginError.textContent = "メールアドレスまたはパスワードが違います。";
-      });
+    loginError.textContent = "";
+    signInWithEmailAndPassword(auth, email, password).catch((error) => {
+      loginError.textContent = "メールアドレスまたはパスワードが違います。";
+    });
   });
 
-  // 認証状態を監視するリスナー
+  // 認証状態を監視し、UIを切り替えるリスナー
   onAuthStateChanged(auth, (user) => {
     if (user) {
       loginView.style.display = "none";
@@ -95,6 +86,10 @@ document.addEventListener("DOMContentLoaded", () => {
           async (response) => {
             if (chrome.runtime.lastError || !response || !response.success) {
               alert(response?.message || "成績データの取得に失敗しました。");
+              console.error(
+                "成績データ取得のエラー:",
+                chrome.runtime.lastError || response
+              );
               specialGpaDisplay.textContent = "-";
               return;
             }
@@ -119,17 +114,129 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
               }
 
-              const specialCourseIds = ["T2-ENG101", "T2-SCI203", "SPEC999"];
-              const multiplier = 1.5;
-              let totalPoints = 0;
+              // 特殊GPAの計算
+              /**
+               * 1年次：1.2
+               * 2年次：1.4
+               *
+               * 必修科目：1.2
+               * 選択必修科目：1.4
+               * 選択科目：1.6
+               *
+               */
+              const firstYearIds = [
+                "76010050",
+                "76010070",
+                "76010010",
+                "76010030",
+                "76020090",
+                "77451010",
+                "77451020",
+                "77453010",
+                "77405020",
+                "77405010",
+              ];
+              const secondYearIds = [
+                "77401100",
+                "77451070",
+                "77451040",
+                "77401130",
+                "77401150",
+                "77451080",
+                "77401180",
+                "77451100",
+                "77451120",
+                "77451110",
+                "77453100",
+                "76020110",
+                "77403040",
+                "77453050",
+                "77453060",
+                "77453070",
+                "77453080",
+                "77403030",
+                "77453090",
+                "77405090",
+                "77405100",
+                "77455020",
+                "77455050",
+                "77405290",
+                "77455070",
+                "77455080",
+              ];
+              const R_courseIds = [
+                "76010050",
+                "76010010",
+                "76010030",
+                "76020090",
+                "77451010",
+                "77451020",
+                "77401100",
+                "77451070",
+                "77451040",
+                "77401130",
+                "77401150",
+                "77451080",
+                "77401180",
+                "77451100",
+                "77451120",
+                "77451110",
+              ];
+              const RS_courseIds = [
+                "76010070",
+                "77453010",
+                "77405020",
+                "77453100",
+                "76020110",
+                "77403040",
+                "77453050",
+                "77453060",
+                "77453070",
+                "77453080",
+                "77403030",
+                "77453090",
+              ];
+              const S_courseIds = [
+                "77405010",
+                "77405090",
+                "77405100",
+                "77455020",
+                "77455050",
+                "77405290",
+                "77455070",
+                "77455080",
+              ];
+
+              const multi_firstYear = 1.2;
+              const multi_secondYear = 1.4;
+              const multi_R = 1.0;
+              const multi_RS = 1.2;
+              const multi_S = 1.4;
+              let totalGp_credit = 0;
+              let totalCredits = 0;
               grades.forEach((grade) => {
-                let point = grade.GP;
-                if (specialCourseIds.includes(grade.科目id)) {
-                  point *= multiplier;
+                let gp = grade.GP;
+                let credit = grade.単位;
+
+                if (firstYearIds.includes(grade.科目id)) {
+                  gp *= multi_firstYear;
+                } else if (secondYearIds.includes(grade.科目id)) {
+                  gp *= multi_secondYear;
                 }
-                totalPoints += point;
+
+                if (R_courseIds.includes(grade.科目id)) {
+                  gp *= multi_R;
+                } else if (RS_courseIds.includes(grade.科目id)) {
+                  gp *= multi_RS;
+                } else if (S_courseIds.includes(grade.科目id)) {
+                  gp *= multi_S;
+                }
+                console.log(`${grade.科目名}:  ${grade.GP} -> ${gp}`);
+                totalCredits += credit;
+                totalGp_credit += gp * credit;
               });
-              const specialGpa = (totalPoints / grades.length).toFixed(3);
+              const specialGpa = (totalGp_credit / totalCredits).toFixed(3);
+              console.log(`総単位数: ${totalCredits}, 特殊GPA: ${specialGpa}`);
 
               await addDoc(specialGpaRef, {
                 author_uid: author_uid,
@@ -149,7 +256,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     });
 
-    // --- 「研究室にエントリー」関連の処理（変更なし） ---
+    // --- 「研究室にエントリー」関連の処理 ---
     submitButton.addEventListener("click", async () => {
       if (!selectedLabId) return;
       try {
@@ -176,6 +283,8 @@ document.addEventListener("DOMContentLoaded", () => {
         alert("エントリーに失敗しました。");
       }
     });
+
+    // --- 関数の定義 ---
     async function fetchEntryStatus() {
       const entriesRef = collection(db, "entries");
       const q = query(entriesRef, where("author_uid", "==", user.uid));
@@ -202,10 +311,17 @@ document.addEventListener("DOMContentLoaded", () => {
       try {
         const labsCollectionRef = collection(db, "labs");
         const querySnapshot = await getDocs(labsCollectionRef);
-        labList.innerHTML = "";
 
+        const labs = [];
         querySnapshot.forEach((doc) => {
-          const lab = doc.data();
+          labs.push(doc.data());
+        });
+
+        console.log("Firebaseから取得した研究室データ:", labs);
+
+        labList.innerHTML = ""; // リストを一旦空にする
+
+        labs.forEach((lab) => {
           if (lab.isEntryOpen) {
             const li = document.createElement("li");
             // capacityフィールドが存在すれば、定員も一緒に表示する
@@ -228,6 +344,7 @@ document.addEventListener("DOMContentLoaded", () => {
             labList.appendChild(li);
           }
         });
+
         if (labList.innerHTML === "") {
           labList.textContent = "エントリー可能な研究室はありません。";
         }
@@ -262,5 +379,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // --- 初期化処理 ---
     fetchLabs();
     fetchEntryStatus();
+    fetchSpecialGpaStatus(); // ★★★【追加】初期化時にGPAの状況も確認する
   }
 });
