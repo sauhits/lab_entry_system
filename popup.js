@@ -70,7 +70,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // --- 「特殊GPAを計算・送信」ボタンの処理 ---
     sendSpecialGpaButton.addEventListener("click", () => {
       specialGpaDisplay.textContent = "成績データ取得中...";
-      chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         const activeTab = tabs[0];
         const targetUrl =
           "https://gakujo.shizuoka.ac.jp/lcu-web/SC_10004B00_01";
@@ -98,10 +98,6 @@ document.addEventListener("DOMContentLoaded", () => {
             const grades = response.data;
 
             try {
-              const rulesUrl = chrome.runtime.getURL("gpa-rules.json");
-              const rulesResponse = await fetch(rulesUrl);
-              const rules = await rulesResponse.json();
-
               const author_uid = user.uid;
               const specialGpaRef = collection(db, "special_gpa");
               const q = query(
@@ -128,23 +124,112 @@ document.addEventListener("DOMContentLoaded", () => {
                * 選択科目：1.6
                *
                */
+              const firstYearIds = [
+                "76010050",
+                "76010070",
+                "76010010",
+                "76010030",
+                "76020090",
+                "77451010",
+                "77451020",
+                "77453010",
+                "77405020",
+                "77405010",
+              ];
+              const secondYearIds = [
+                "77401100",
+                "77451070",
+                "77451040",
+                "77401130",
+                "77401150",
+                "77451080",
+                "77401180",
+                "77451100",
+                "77451120",
+                "77451110",
+                "77453100",
+                "76020110",
+                "77403040",
+                "77453050",
+                "77453060",
+                "77453070",
+                "77453080",
+                "77403030",
+                "77453090",
+                "77405090",
+                "77405100",
+                "77455020",
+                "77455050",
+                "77405290",
+                "77455070",
+                "77455080",
+              ];
+              const R_courseIds = [
+                "76010050",
+                "76010010",
+                "76010030",
+                "76020090",
+                "77451010",
+                "77451020",
+                "77401100",
+                "77451070",
+                "77451040",
+                "77401130",
+                "77401150",
+                "77451080",
+                "77401180",
+                "77451100",
+                "77451120",
+                "77451110",
+              ];
+              const RS_courseIds = [
+                "76010070",
+                "77453010",
+                "77405020",
+                "77453100",
+                "76020110",
+                "77403040",
+                "77453050",
+                "77453060",
+                "77453070",
+                "77453080",
+                "77403030",
+                "77453090",
+              ];
+              const S_courseIds = [
+                "77405010",
+                "77405090",
+                "77405100",
+                "77455020",
+                "77455050",
+                "77405290",
+                "77455070",
+                "77455080",
+              ];
+
+              const multi_firstYear = 1.2;
+              const multi_secondYear = 1.4;
+              const multi_R = 1.0;
+              const multi_RS = 1.2;
+              const multi_S = 1.4;
               let totalGp_credit = 0;
               let totalCredits = 0;
               grades.forEach((grade) => {
                 let gp = grade.GP;
                 let credit = grade.単位;
 
-                for (const rule of rules.yearMultipliers) {
-                  if (rule.ids.includes(grade.科目id)) {
-                    gp *= rule.multiplier;
-                    break;
-                  }
+                if (firstYearIds.includes(grade.科目id)) {
+                  gp *= multi_firstYear;
+                } else if (secondYearIds.includes(grade.科目id)) {
+                  gp *= multi_secondYear;
                 }
-                for (const rule of rules.typeMultipliers) {
-                  if (rule.ids.includes(grade.科目id)) {
-                    gp *= rule.multiplier;
-                    break;
-                  }
+
+                if (R_courseIds.includes(grade.科目id)) {
+                  gp *= multi_R;
+                } else if (RS_courseIds.includes(grade.科目id)) {
+                  gp *= multi_RS;
+                } else if (S_courseIds.includes(grade.科目id)) {
+                  gp *= multi_S;
                 }
                 console.log(`${grade.科目名}:  ${grade.GP} -> ${gp}`);
                 totalCredits += credit;
@@ -245,6 +330,8 @@ document.addEventListener("DOMContentLoaded", () => {
             } else {
               li.textContent = lab.name;
             }
+
+            li.textContent = lab.name;
             li.addEventListener("click", () => {
               document.querySelectorAll("#lab-list li").forEach((el) => {
                 el.style.backgroundColor = "";
