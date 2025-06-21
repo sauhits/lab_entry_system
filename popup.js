@@ -69,6 +69,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // --- 「特殊GPAを計算・送信」ボタンの処理 ---
     sendSpecialGpaButton.addEventListener("click", () => {
+      sendSpecialGpaButton.disabled = true;
       specialGpaDisplay.textContent = "成績データ取得中...";
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         const activeTab = tabs[0];
@@ -77,182 +78,213 @@ document.addEventListener("DOMContentLoaded", () => {
         if (activeTab.url !== targetUrl) {
           alert("この機能は大学の成績ページで実行してください。");
           specialGpaDisplay.textContent = "-";
+          sendSpecialGpaButton.disabled = false;
           return;
         }
 
-        chrome.tabs.sendMessage(
-          activeTab.id,
-          { action: "scrapeGrades" },
-          async (response) => {
-            if (chrome.runtime.lastError || !response || !response.success) {
-              alert(response?.message || "成績データの取得に失敗しました。");
-              console.error(
-                "成績データ取得のエラー:",
-                chrome.runtime.lastError || response
-              );
-              specialGpaDisplay.textContent = "-";
-              return;
-            }
+        console.log("ページをリロードします...");
+        specialGpaDisplay.textContent = "ページをリロード中...";
 
-            specialGpaDisplay.textContent = "計算・送信中...";
-            const grades = response.data;
+        // リロード完了を監視するリスナー関数
+        const listener = (tabId, changeInfo, tab) => {
+          // 目的のタブのリロードが完了したかチェック
+          if (tabId === activeTab.id && changeInfo.status === "complete") {
+            // リスナーを一度実行したらすぐに削除する（重要）
+            chrome.tabs.onUpdated.removeListener(listener);
 
-            try {
-              const author_uid = user.uid;
-              const specialGpaRef = collection(db, "special_gpa");
-              const q = query(
-                specialGpaRef,
-                where("author_uid", "==", author_uid)
-              );
-              const querySnapshot = await getDocs(q);
+            console.log("リロード完了。スクレイピングを開始します。");
+            specialGpaDisplay.textContent = "成績データ取得中...";
 
-              if (!querySnapshot.empty) {
-                // 重複が見つかった場合
-                alert("このアカウントの特殊GPAは既に登録されています。");
-                // 登録済みのGPAを取得・表示してUIを更新する
-                fetchSpecialGpaStatus();
-                return;
+            chrome.tabs.sendMessage(
+              activeTab.id,
+              { action: "scrapeGrades" },
+              async (response) => {
+                if (
+                  chrome.runtime.lastError ||
+                  !response ||
+                  !response.success
+                ) {
+                  alert(
+                    response?.message || "成績データの取得に失敗しました。"
+                  );
+                  console.error(
+                    "成績データ取得のエラー:",
+                    chrome.runtime.lastError || response
+                  );
+                  specialGpaDisplay.textContent = "-";
+                  sendSpecialGpaButton.disabled = false;
+                  return;
+                }
+
+                specialGpaDisplay.textContent = "計算・送信中...";
+                const grades = response.data;
+
+                try {
+                  const author_uid = user.uid;
+                  const specialGpaRef = collection(db, "special_gpa");
+                  const q = query(
+                    specialGpaRef,
+                    where("author_uid", "==", author_uid)
+                  );
+                  const querySnapshot = await getDocs(q);
+
+                  if (!querySnapshot.empty) {
+                    // 重複が見つかった場合
+                    alert("このアカウントの特殊GPAは既に登録されています。");
+                    // 登録済みのGPAを取得・表示してUIを更新する
+                    fetchSpecialGpaStatus();
+                    return;
+                  }
+
+                  // 特殊GPAの計算
+                  /**
+                   * 1年次：1.2
+                   * 2年次：1.4
+                   *
+                   * 必修科目：1.2
+                   * 選択必修科目：1.4
+                   * 選択科目：1.6
+                   *
+                   */
+                  const firstYearIds = [
+                    "76010050",
+                    "76010070",
+                    "76010010",
+                    "76010030",
+                    "76020090",
+                    "77451010",
+                    "77451020",
+                    "77453010",
+                    "77405020",
+                    "77405010",
+                  ];
+                  const secondYearIds = [
+                    "77401100",
+                    "77451070",
+                    "77451040",
+                    "77401130",
+                    "77401150",
+                    "77451080",
+                    "77401180",
+                    "77451100",
+                    "77451120",
+                    "77451110",
+                    "77453100",
+                    "76020110",
+                    "77403040",
+                    "77453050",
+                    "77453060",
+                    "77453070",
+                    "77453080",
+                    "77403030",
+                    "77453090",
+                    "77405090",
+                    "77405100",
+                    "77455020",
+                    "77455050",
+                    "77405290",
+                    "77455070",
+                    "77455080",
+                  ];
+                  const R_courseIds = [
+                    "76010050",
+                    "76010010",
+                    "76010030",
+                    "76020090",
+                    "77451010",
+                    "77451020",
+                    "77401100",
+                    "77451070",
+                    "77451040",
+                    "77401130",
+                    "77401150",
+                    "77451080",
+                    "77401180",
+                    "77451100",
+                    "77451120",
+                    "77451110",
+                  ];
+                  const RS_courseIds = [
+                    "76010070",
+                    "77453010",
+                    "77405020",
+                    "77453100",
+                    "76020110",
+                    "77403040",
+                    "77453050",
+                    "77453060",
+                    "77453070",
+                    "77453080",
+                    "77403030",
+                    "77453090",
+                  ];
+                  const S_courseIds = [
+                    "77405010",
+                    "77405090",
+                    "77405100",
+                    "77455020",
+                    "77455050",
+                    "77405290",
+                    "77455070",
+                    "77455080",
+                  ];
+
+                  const multi_firstYear = 1.2;
+                  const multi_secondYear = 1.4;
+                  const multi_R = 1.0;
+                  const multi_RS = 1.2;
+                  const multi_S = 1.4;
+                  let totalGp_credit = 0;
+                  let totalCredits = 0;
+                  grades.forEach((grade) => {
+                    let gp = grade.GP;
+                    let credit = grade.単位;
+
+                    if (firstYearIds.includes(grade.科目id)) {
+                      gp *= multi_firstYear;
+                    } else if (secondYearIds.includes(grade.科目id)) {
+                      gp *= multi_secondYear;
+                    }
+
+                    if (R_courseIds.includes(grade.科目id)) {
+                      gp *= multi_R;
+                    } else if (RS_courseIds.includes(grade.科目id)) {
+                      gp *= multi_RS;
+                    } else if (S_courseIds.includes(grade.科目id)) {
+                      gp *= multi_S;
+                    }
+                    console.log(`${grade.科目名}:  ${grade.GP} -> ${gp}`);
+                    totalCredits += credit;
+                    totalGp_credit += gp * credit;
+                  });
+                  const specialGpa = (totalGp_credit / totalCredits).toFixed(3);
+                  console.log(
+                    `総単位数: ${totalCredits}, 特殊GPA: ${specialGpa}`
+                  );
+
+                  await addDoc(specialGpaRef, {
+                    author_uid: author_uid,
+                    specialGpa: parseFloat(specialGpa),
+                    submittedAt: serverTimestamp(),
+                  });
+
+                  specialGpaDisplay.textContent = specialGpa;
+                  alert("特殊GPAの計算と送信が完了しました！");
+                  fetchSpecialGpaStatus();
+                } catch (error) {
+                  console.error("特殊GPA処理でエラー:", error);
+                  specialGpaDisplay.textContent = "処理に失敗しました";
+                  alert("データベースへの書き込み中にエラーが発生しました。");
+                  sendSpecialGpaButton.disabled = false;
+                }
               }
-
-              // 特殊GPAの計算
-              /**
-               * 1年次：1.2
-               * 2年次：1.4
-               *
-               * 必修科目：1.2
-               * 選択必修科目：1.4
-               * 選択科目：1.6
-               *
-               */
-              const firstYearIds = [
-                "76010050",
-                "76010070",
-                "76010010",
-                "76010030",
-                "76020090",
-                "77451010",
-                "77451020",
-                "77453010",
-                "77405020",
-                "77405010",
-              ];
-              const secondYearIds = [
-                "77401100",
-                "77451070",
-                "77451040",
-                "77401130",
-                "77401150",
-                "77451080",
-                "77401180",
-                "77451100",
-                "77451120",
-                "77451110",
-                "77453100",
-                "76020110",
-                "77403040",
-                "77453050",
-                "77453060",
-                "77453070",
-                "77453080",
-                "77403030",
-                "77453090",
-                "77405090",
-                "77405100",
-                "77455020",
-                "77455050",
-                "77405290",
-                "77455070",
-                "77455080",
-              ];
-              const R_courseIds = [
-                "76010050",
-                "76010010",
-                "76010030",
-                "76020090",
-                "77451010",
-                "77451020",
-                "77401100",
-                "77451070",
-                "77451040",
-                "77401130",
-                "77401150",
-                "77451080",
-                "77401180",
-                "77451100",
-                "77451120",
-                "77451110",
-              ];
-              const RS_courseIds = [
-                "76010070",
-                "77453010",
-                "77405020",
-                "77453100",
-                "76020110",
-                "77403040",
-                "77453050",
-                "77453060",
-                "77453070",
-                "77453080",
-                "77403030",
-                "77453090",
-              ];
-              const S_courseIds = [
-                "77405010",
-                "77405090",
-                "77405100",
-                "77455020",
-                "77455050",
-                "77405290",
-                "77455070",
-                "77455080",
-              ];
-
-              const multi_firstYear = 1.2;
-              const multi_secondYear = 1.4;
-              const multi_R = 1.0;
-              const multi_RS = 1.2;
-              const multi_S = 1.4;
-              let totalGp_credit = 0;
-              let totalCredits = 0;
-              grades.forEach((grade) => {
-                let gp = grade.GP;
-                let credit = grade.単位;
-
-                if (firstYearIds.includes(grade.科目id)) {
-                  gp *= multi_firstYear;
-                } else if (secondYearIds.includes(grade.科目id)) {
-                  gp *= multi_secondYear;
-                }
-
-                if (R_courseIds.includes(grade.科目id)) {
-                  gp *= multi_R;
-                } else if (RS_courseIds.includes(grade.科目id)) {
-                  gp *= multi_RS;
-                } else if (S_courseIds.includes(grade.科目id)) {
-                  gp *= multi_S;
-                }
-                console.log(`${grade.科目名}:  ${grade.GP} -> ${gp}`);
-                totalCredits += credit;
-                totalGp_credit += gp * credit;
-              });
-              const specialGpa = (totalGp_credit / totalCredits).toFixed(3);
-              console.log(`総単位数: ${totalCredits}, 特殊GPA: ${specialGpa}`);
-
-              await addDoc(specialGpaRef, {
-                author_uid: author_uid,
-                specialGpa: parseFloat(specialGpa),
-                submittedAt: serverTimestamp(),
-              });
-
-              specialGpaDisplay.textContent = specialGpa;
-              alert("特殊GPAの計算と送信が完了しました！");
-            } catch (error) {
-              console.error("特殊GPA処理でエラー:", error);
-              specialGpaDisplay.textContent = "処理に失敗しました";
-              alert("データベースへの書き込み中にエラーが発生しました。");
-            }
+            );
           }
-        );
+        };
+        // タブの更新を監視するリスナーを登録
+        chrome.tabs.onUpdated.addListener(listener);
+        // タブをリロード
+        chrome.tabs.reload(activeTab.id);
       });
     });
 
