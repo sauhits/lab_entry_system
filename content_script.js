@@ -41,6 +41,7 @@ function scrapeGradeData() {
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "scrapeGrades") {
     console.log("ポップアップから成績データ取得の依頼を受け取りました。");
+    
     const grades = scrapeGradeData();
     if (grades.length > 0) {
       sendResponse({ success: true, data: grades });
