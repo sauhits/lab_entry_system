@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "大学ポータル支援",
+  "name": "Shizuoka Univ.-CS GPA & Lab Assistant",
   "version": "2.2",
-  "description": "GPAの取得と研究室エントリーを支援します。",
+  "description": "Calculates a special GPA and assists with lab applications by scraping grade data from the Gakujo portal.",
   "permissions": ["storage", "activeTab", "scripting"],
   "host_permissions": ["https://gakujo.shizuoka.ac.jp/lcu-web/*"],
   "action": {

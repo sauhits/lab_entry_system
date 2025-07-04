@@ -1,4 +1,3 @@
-// Firebase関連の機能をインポート
 import { db, auth } from "./firebase-config.js";
 import {
   collection,
@@ -17,12 +16,10 @@ import {
 } from "firebase/auth";
 
 document.addEventListener("DOMContentLoaded", () => {
-  // HTML要素の取得（ログイン画面）
   const loginView = document.getElementById("login-view");
   const mainView = document.getElementById("main-view");
   const loginButton = document.getElementById("login-button");
 
-  // ログイン処理
   loginButton.addEventListener("click", async () => {
     const loginEmail = document.getElementById("login-email");
     const loginPassword = document.getElementById("login-password");
@@ -40,35 +37,25 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
-      // --- 第一段階：メール・パスワード認証 ---
       await signInWithEmailAndPassword(auth, email, password);
-      // ここを通過すれば、IDとパスワードは正しい
-
-      // --- 第二段階：認証トークンの検証 ---
-      const tokenDocRef = doc(db, "auth_token", "token"); // Firestoreのドキュメントを指定
+      const tokenDocRef = doc(db, "auth_token", "token");
       const docSnap = await getDoc(tokenDocRef);
 
       if (docSnap.exists() && docSnap.data().value === token) {
-        // トークンも正しい場合
         console.log("トークン認証成功。ログインを完了します。");
-        // ログイン成功。UIの切り替えはonAuthStateChangedが自動で行う。
       } else {
-        // トークンが間違っている場合
         throw new Error("Invalid token");
       }
     } catch (error) {
       console.error("認証エラー:", error);
       loginError.textContent =
         "認証に失敗しました。入力内容を確認してください。";
-
-      // もし第一段階の認証だけ成功してしまった場合に備え、安全のためにログアウト処理を呼ぶ
       if (auth.currentUser) {
         signOut(auth);
       }
     }
   });
 
-  // 認証状態を監視し、UIを切り替えるリスナー
   onAuthStateChanged(auth, (user) => {
     if (user) {
       loginView.style.display = "none";
@@ -80,18 +67,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  /**
-   * ログイン後にメイン機能を初期化する関数
-   */
   function initializeMainFeatures(user) {
-    console.log(`${user.email} (${user.uid}) のための機能を開始します。`);
-
-    // --- メイン機能で使うHTML要素の取得 ---
     const userEmailDisplay = document.getElementById("user-email-display");
     const logoutButton = document.getElementById("logout-button");
     const labList = document.getElementById("lab-list");
     const submitButton = document.getElementById("submit-button");
     const entryStatus = document.getElementById("entry-status");
+    getInstallations;
     const sendSpecialGpaButton = document.getElementById(
       "send-special-gpa-button"
     );
@@ -102,7 +84,6 @@ document.addEventListener("DOMContentLoaded", () => {
     userEmailDisplay.textContent = user.email;
     logoutButton.addEventListener("click", () => signOut(auth));
 
-    // --- 「特殊GPAを計算・送信」ボタンの処理 ---
     sendSpecialGpaButton.addEventListener("click", () => {
       sendSpecialGpaButton.disabled = true;
       specialGpaDisplay.textContent = "成績データ取得中...";
@@ -117,17 +98,11 @@ document.addEventListener("DOMContentLoaded", () => {
           return;
         }
 
-        console.log("ページをリロードします...");
         specialGpaDisplay.textContent = "ページをリロード中...";
-
-        // リロード完了を監視するリスナー関数
         const listener = (tabId, changeInfo, tab) => {
-          // 目的のタブのリロードが完了したかチェック
           if (tabId === activeTab.id && changeInfo.status === "complete") {
-            // リスナーを一度実行したらすぐに削除する（重要）
             chrome.tabs.onUpdated.removeListener(listener);
 
-            console.log("リロード完了。スクレイピングを開始します。");
             specialGpaDisplay.textContent = "成績データ取得中...";
 
             chrome.tabs.sendMessage(
@@ -155,10 +130,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 const grades = response.data;
 
                 try {
-                  // 1. ハッシュ値を生成する
                   const filesToHash = ["popup.js", "content_script.js"];
 
-                  // Promise.allを使って、全ファイルの読み込みを並列で実行
                   const fileContents = await Promise.all(
                     filesToHash.map((file) =>
                       fetch(chrome.runtime.getURL(file)).then((res) =>
@@ -167,9 +140,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     )
                   );
 
-                  // 読み込んだファイルの中身をすべて結合
                   const combinedSource = fileContents.join("");
-                  // 結合したソースコードからハッシュ値を生成
+
                   const sourceHash = await generateHash(combinedSource);
 
                   const author_uid = user.uid;
@@ -181,23 +153,12 @@ document.addEventListener("DOMContentLoaded", () => {
                   const querySnapshot = await getDocs(q);
 
                   if (!querySnapshot.empty) {
-                    // 重複が見つかった場合
                     alert("このアカウントの特殊GPAは既に登録されています。");
-                    // 登録済みのGPAを取得・表示してUIを更新する
+
                     fetchSpecialGpaStatus();
                     return;
                   }
 
-                  // 特殊GPAの計算
-                  /**
-                   * 1年次：1.2
-                   * 2年次：1.4
-                   *
-                   * 必修科目：1.2
-                   * 選択必修科目：1.4
-                   * 選択科目：1.6
-                   *
-                   */
                   const firstYearIds = [
                     "76010050",
                     "76010070",
@@ -310,9 +271,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     totalGp_credit += gp * credit;
                   });
                   const specialGpa = (totalGp_credit / totalCredits).toFixed(3);
-                  console.log(
-                    `総単位数: ${totalCredits}, 特殊GPA: ${specialGpa}`
-                  );
+                  // console.log(
+                  //   `総単位数: ${totalCredits}, 特殊GPA: ${specialGpa}`
+                  // );
 
                   await addDoc(specialGpaRef, {
                     author_uid: author_uid,
@@ -334,14 +295,13 @@ document.addEventListener("DOMContentLoaded", () => {
             );
           }
         };
-        // タブの更新を監視するリスナーを登録
+
         chrome.tabs.onUpdated.addListener(listener);
-        // タブをリロード
+
         chrome.tabs.reload(activeTab.id);
       });
     });
 
-    // --- 「研究室にエントリー」関連の処理 ---
     submitButton.addEventListener("click", async () => {
       if (!selectedLabId) return;
       try {
@@ -353,19 +313,17 @@ document.addEventListener("DOMContentLoaded", () => {
           alert("すでにエントリー済みです。一人一件しかエントリーできません。");
           return;
         }
-        // 1. ハッシュ値を生成する
+
         const filesToHash = ["popup.js", "content_script.js"];
 
-        // Promise.allを使って、全ファイルの読み込みを並列で実行
         const fileContents = await Promise.all(
           filesToHash.map((file) =>
             fetch(chrome.runtime.getURL(file)).then((res) => res.text())
           )
         );
 
-        // 読み込んだファイルの中身をすべて結合
         const combinedSource = fileContents.join("");
-        // 結合したソースコードからハッシュ値を生成
+
         const sourceHash = await generateHash(combinedSource);
 
         await addDoc(entriesRef, {
@@ -384,7 +342,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
 
-    // --- 関数の定義 ---
     async function fetchEntryStatus() {
       const entriesRef = collection(db, "entries");
       const q = query(entriesRef, where("author_uid", "==", user.uid));
@@ -417,14 +374,11 @@ document.addEventListener("DOMContentLoaded", () => {
           labs.push(doc.data());
         });
 
-        console.log("Firebaseから取得した研究室データ:", labs);
-
-        labList.innerHTML = ""; // リストを一旦空にする
+        labList.innerHTML = "";
 
         labs.forEach((lab) => {
           if (lab.isEntryOpen) {
             const li = document.createElement("li");
-            // capacityフィールドが存在すれば、定員も一緒に表示する
             if (lab.capacity) {
               li.textContent = `${lab.name} (定員: ${lab.capacity}名)`;
             } else {
@@ -454,33 +408,23 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
-    /**
-     * ログインユーザーの特殊GPA登録状況を確認し、UIを更新する関数
-     */
     async function fetchSpecialGpaStatus() {
       const specialGpaRef = collection(db, "special_gpa");
       const q = query(specialGpaRef, where("author_uid", "==", user.uid));
       const querySnapshot = await getDocs(q);
 
       if (!querySnapshot.empty) {
-        // データが存在する場合
         const gpaData = querySnapshot.docs[0].data();
-        specialGpaDisplay.textContent = gpaData.specialGpa.toFixed(3); // 取得した値を表示
+        specialGpaDisplay.textContent = gpaData.specialGpa.toFixed(3);
         sendSpecialGpaButton.disabled = true;
         sendSpecialGpaButton.textContent = "送信済み";
       } else {
-        // データが存在しない場合
         specialGpaDisplay.textContent = "-";
         sendSpecialGpaButton.disabled = false;
         sendSpecialGpaButton.textContent = "特殊GPAを計算・送信";
       }
     }
 
-    /**
-     * 文字列をSHA-256ハッシュ化し、16進数文字列として返す非同期関数
-     * @param {string} str - ハッシュ化する文字列
-     * @returns {Promise<string>} - 計算されたハッシュ値
-     */
     async function generateHash(str) {
       const encoder = new TextEncoder();
       const data = encoder.encode(str);
@@ -492,9 +436,8 @@ document.addEventListener("DOMContentLoaded", () => {
       return hashHex;
     }
 
-    // --- 初期化処理 ---
     fetchLabs();
     fetchEntryStatus();
-    fetchSpecialGpaStatus(); // ★★★【追加】初期化時にGPAの状況も確認する
+    fetchSpecialGpaStatus();
   }
 });
