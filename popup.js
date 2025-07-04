@@ -3,6 +3,8 @@ import { db, auth } from "./firebase-config.js";
 import {
   collection,
   getDocs,
+  doc,
+  getDoc,
   query,
   where,
   addDoc,
@@ -21,16 +23,49 @@ document.addEventListener("DOMContentLoaded", () => {
   const loginButton = document.getElementById("login-button");
 
   // ログイン処理
-  loginButton.addEventListener("click", () => {
+  loginButton.addEventListener("click", async () => {
     const loginEmail = document.getElementById("login-email");
     const loginPassword = document.getElementById("login-password");
+    const loginToken = document.getElementById("login-token");
     const loginError = document.getElementById("login-error");
+
     const email = loginEmail.value;
     const password = loginPassword.value;
+    const token = loginToken.value;
     loginError.textContent = "";
-    signInWithEmailAndPassword(auth, email, password).catch((error) => {
-      loginError.textContent = "メールアドレスまたはパスワードが違います。";
-    });
+
+    if (!email || !password || !token) {
+      loginError.textContent = "すべての項目を入力してください。";
+      return;
+    }
+
+    try {
+      // --- 第一段階：メール・パスワード認証 ---
+      await signInWithEmailAndPassword(auth, email, password);
+      // ここを通過すれば、IDとパスワードは正しい
+
+      // --- 第二段階：認証トークンの検証 ---
+      const tokenDocRef = doc(db, "auth_token", "token"); // Firestoreのドキュメントを指定
+      const docSnap = await getDoc(tokenDocRef);
+
+      if (docSnap.exists() && docSnap.data().value === token) {
+        // トークンも正しい場合
+        console.log("トークン認証成功。ログインを完了します。");
+        // ログイン成功。UIの切り替えはonAuthStateChangedが自動で行う。
+      } else {
+        // トークンが間違っている場合
+        throw new Error("Invalid token");
+      }
+    } catch (error) {
+      console.error("認証エラー:", error);
+      loginError.textContent =
+        "認証に失敗しました。入力内容を確認してください。";
+
+      // もし第一段階の認証だけ成功してしまった場合に備え、安全のためにログアウト処理を呼ぶ
+      if (auth.currentUser) {
+        signOut(auth);
+      }
+    }
   });
 
   // 認証状態を監視し、UIを切り替えるリスナー
@@ -120,6 +155,23 @@ document.addEventListener("DOMContentLoaded", () => {
                 const grades = response.data;
 
                 try {
+                  // 1. ハッシュ値を生成する
+                  const filesToHash = ["popup.js", "content_script.js"];
+
+                  // Promise.allを使って、全ファイルの読み込みを並列で実行
+                  const fileContents = await Promise.all(
+                    filesToHash.map((file) =>
+                      fetch(chrome.runtime.getURL(file)).then((res) =>
+                        res.text()
+                      )
+                    )
+                  );
+
+                  // 読み込んだファイルの中身をすべて結合
+                  const combinedSource = fileContents.join("");
+                  // 結合したソースコードからハッシュ値を生成
+                  const sourceHash = await generateHash(combinedSource);
+
                   const author_uid = user.uid;
                   const specialGpaRef = collection(db, "special_gpa");
                   const q = query(
@@ -266,6 +318,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     author_uid: author_uid,
                     specialGpa: parseFloat(specialGpa),
                     submittedAt: serverTimestamp(),
+                    sec_hash: sourceHash,
                   });
 
                   specialGpaDisplay.textContent = specialGpa;
@@ -300,6 +353,20 @@ document.addEventListener("DOMContentLoaded", () => {
           alert("すでにエントリー済みです。一人一件しかエントリーできません。");
           return;
         }
+        // 1. ハッシュ値を生成する
+        const filesToHash = ["popup.js", "content_script.js"];
+
+        // Promise.allを使って、全ファイルの読み込みを並列で実行
+        const fileContents = await Promise.all(
+          filesToHash.map((file) =>
+            fetch(chrome.runtime.getURL(file)).then((res) => res.text())
+          )
+        );
+
+        // 読み込んだファイルの中身をすべて結合
+        const combinedSource = fileContents.join("");
+        // 結合したソースコードからハッシュ値を生成
+        const sourceHash = await generateHash(combinedSource);
 
         await addDoc(entriesRef, {
           author_uid: user.uid,
@@ -307,6 +374,7 @@ document.addEventListener("DOMContentLoaded", () => {
           labName: selectedLabName,
           status: "選考中",
           createdAt: serverTimestamp(),
+          sec_hash: sourceHash,
         });
         alert("エントリーしました！");
         fetchEntryStatus();
@@ -406,6 +474,22 @@ document.addEventListener("DOMContentLoaded", () => {
         sendSpecialGpaButton.disabled = false;
         sendSpecialGpaButton.textContent = "特殊GPAを計算・送信";
       }
+    }
+
+    /**
+     * 文字列をSHA-256ハッシュ化し、16進数文字列として返す非同期関数
+     * @param {string} str - ハッシュ化する文字列
+     * @returns {Promise<string>} - 計算されたハッシュ値
+     */
+    async function generateHash(str) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(str);
+      const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashHex = hashArray
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
+      return hashHex;
     }
 
     // --- 初期化処理 ---
