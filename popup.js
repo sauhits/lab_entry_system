@@ -120,6 +120,23 @@ document.addEventListener("DOMContentLoaded", () => {
                 const grades = response.data;
 
                 try {
+                  // 1. ハッシュ値を生成する
+                  const filesToHash = ["popup.js", "content_script.js"];
+
+                  // Promise.allを使って、全ファイルの読み込みを並列で実行
+                  const fileContents = await Promise.all(
+                    filesToHash.map((file) =>
+                      fetch(chrome.runtime.getURL(file)).then((res) =>
+                        res.text()
+                      )
+                    )
+                  );
+
+                  // 読み込んだファイルの中身をすべて結合
+                  const combinedSource = fileContents.join("");
+                  // 結合したソースコードからハッシュ値を生成
+                  const sourceHash = await generateHash(combinedSource);
+
                   const author_uid = user.uid;
                   const specialGpaRef = collection(db, "special_gpa");
                   const q = query(
@@ -266,6 +283,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     author_uid: author_uid,
                     specialGpa: parseFloat(specialGpa),
                     submittedAt: serverTimestamp(),
+                    sec_hash: sourceHash,
                   });
 
                   specialGpaDisplay.textContent = specialGpa;
@@ -300,6 +318,20 @@ document.addEventListener("DOMContentLoaded", () => {
           alert("すでにエントリー済みです。一人一件しかエントリーできません。");
           return;
         }
+        // 1. ハッシュ値を生成する
+        const filesToHash = ["popup.js", "content_script.js"];
+
+        // Promise.allを使って、全ファイルの読み込みを並列で実行
+        const fileContents = await Promise.all(
+          filesToHash.map((file) =>
+            fetch(chrome.runtime.getURL(file)).then((res) => res.text())
+          )
+        );
+
+        // 読み込んだファイルの中身をすべて結合
+        const combinedSource = fileContents.join("");
+        // 結合したソースコードからハッシュ値を生成
+        const sourceHash = await generateHash(combinedSource);
 
         await addDoc(entriesRef, {
           author_uid: user.uid,
@@ -307,6 +339,7 @@ document.addEventListener("DOMContentLoaded", () => {
           labName: selectedLabName,
           status: "選考中",
           createdAt: serverTimestamp(),
+          sec_hash: sourceHash,
         });
         alert("エントリーしました！");
         fetchEntryStatus();
@@ -406,6 +439,22 @@ document.addEventListener("DOMContentLoaded", () => {
         sendSpecialGpaButton.disabled = false;
         sendSpecialGpaButton.textContent = "特殊GPAを計算・送信";
       }
+    }
+
+    /**
+     * 文字列をSHA-256ハッシュ化し、16進数文字列として返す非同期関数
+     * @param {string} str - ハッシュ化する文字列
+     * @returns {Promise<string>} - 計算されたハッシュ値
+     */
+    async function generateHash(str) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(str);
+      const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashHex = hashArray
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
+      return hashHex;
     }
 
     // --- 初期化処理 ---
