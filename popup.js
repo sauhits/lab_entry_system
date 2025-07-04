@@ -3,6 +3,8 @@ import { db, auth } from "./firebase-config.js";
 import {
   collection,
   getDocs,
+  doc,
+  getDoc,
   query,
   where,
   addDoc,
@@ -21,16 +23,49 @@ document.addEventListener("DOMContentLoaded", () => {
   const loginButton = document.getElementById("login-button");
 
   // ログイン処理
-  loginButton.addEventListener("click", () => {
+  loginButton.addEventListener("click", async () => {
     const loginEmail = document.getElementById("login-email");
     const loginPassword = document.getElementById("login-password");
+    const loginToken = document.getElementById("login-token");
     const loginError = document.getElementById("login-error");
+
     const email = loginEmail.value;
     const password = loginPassword.value;
+    const token = loginToken.value;
     loginError.textContent = "";
-    signInWithEmailAndPassword(auth, email, password).catch((error) => {
-      loginError.textContent = "メールアドレスまたはパスワードが違います。";
-    });
+
+    if (!email || !password || !token) {
+      loginError.textContent = "すべての項目を入力してください。";
+      return;
+    }
+
+    try {
+      // --- 第一段階：メール・パスワード認証 ---
+      await signInWithEmailAndPassword(auth, email, password);
+      // ここを通過すれば、IDとパスワードは正しい
+
+      // --- 第二段階：認証トークンの検証 ---
+      const tokenDocRef = doc(db, "auth_token", "token"); // Firestoreのドキュメントを指定
+      const docSnap = await getDoc(tokenDocRef);
+
+      if (docSnap.exists() && docSnap.data().value === token) {
+        // トークンも正しい場合
+        console.log("トークン認証成功。ログインを完了します。");
+        // ログイン成功。UIの切り替えはonAuthStateChangedが自動で行う。
+      } else {
+        // トークンが間違っている場合
+        throw new Error("Invalid token");
+      }
+    } catch (error) {
+      console.error("認証エラー:", error);
+      loginError.textContent =
+        "認証に失敗しました。入力内容を確認してください。";
+
+      // もし第一段階の認証だけ成功してしまった場合に備え、安全のためにログアウト処理を呼ぶ
+      if (auth.currentUser) {
+        signOut(auth);
+      }
+    }
   });
 
   // 認証状態を監視し、UIを切り替えるリスナー

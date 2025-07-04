@@ -10,14 +10,12 @@
             font-family: sans-serif;
         }
 
-        /* 少し幅を広げました */
         .container {
             display: flex;
             flex-direction: column;
             gap: 20px;
         }
 
-        /* 縦並びに変更 */
         h1,
         h2,
         h3,
@@ -106,6 +104,8 @@
         <br><br>
         <input type="password" id="login-password" placeholder="パスワード" required>
         <br><br>
+        <input type="password" id="login-token" placeholder="認証トークン" required>
+        <br><br>
         <button id="login-button">ログイン</button>
         <p id="login-error" style="color: red;"></p>
     </div>
@@ -130,7 +130,7 @@
 
             <div class="section" id="gpa-calc-section">
                 <h2>特殊GPA計算</h2>
-                
+
                 <div class="form-group">
                     <h3>計算＆送信</h3>
                     <p>成績ページでこのボタンを押してください。</p>
