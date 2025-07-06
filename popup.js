@@ -73,7 +73,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const labList = document.getElementById("lab-list");
     const submitButton = document.getElementById("submit-button");
     const entryStatus = document.getElementById("entry-status");
-    getInstallations;
     const sendSpecialGpaButton = document.getElementById(
       "send-special-gpa-button"
     );
@@ -384,8 +383,6 @@ document.addEventListener("DOMContentLoaded", () => {
             } else {
               li.textContent = lab.name;
             }
-
-            li.textContent = lab.name;
             li.addEventListener("click", () => {
               document.querySelectorAll("#lab-list li").forEach((el) => {
                 el.style.backgroundColor = "";
