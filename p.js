@@ -254,8 +254,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     if (firstYearIds.includes(grade.科目id)) {
                       gp *= multi_firstYear;
+                      credits_multier += grade.単位;
                     } else if (secondYearIds.includes(grade.科目id)) {
                       gp *= multi_secondYear;
+                      credits_multier += grade.単位;
                     }
 
                     if (R_courseIds.includes(grade.科目id)) {
@@ -269,10 +271,13 @@ document.addEventListener("DOMContentLoaded", () => {
                     totalCredits += credit;
                     totalGp_credit += gp * credit;
                   });
-                  const specialGpa = (totalGp_credit / totalCredits).toFixed(3);
-                  // console.log(
-                  //   `総単位数: ${totalCredits}, 特殊GPA: ${specialGpa}`
-                  // );
+                  const specialGpa = (
+                    ((totalGp_credit / totalCredits) * credits_multier) /
+                    63
+                  ).toFixed(3);
+                  console.log(
+                    `総単位数: ${totalCredits}, 特殊GPA: ${specialGpa}`
+                  );
 
                   await addDoc(specialGpaRef, {
                     author_uid: author_uid,
