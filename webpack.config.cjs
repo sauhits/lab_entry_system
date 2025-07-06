@@ -5,18 +5,19 @@ const WebpackObfuscator = require("webpack-obfuscator");
 module.exports = {
   mode: "production",
   entry: {
-    popup: "./popup.js",
-    content_script: "./content_script.js",
+    p: "./p.js",
+    c: "./c.js",
   },
   output: {
-    path: path.resolve(__dirname, "dist"),
-    filename: "[name].js",
+    filename: '[name].js',
+    path: path.resolve(__dirname, 'dist'),
+    clean: true,
   },
   plugins: [
     new CopyPlugin({
       patterns: [
         { from: "manifest.json", to: "." },
-        { from: "popup.html", to: "." },
+        { from: "index.html", to: "." },
       ],
     }),
     new WebpackObfuscator(

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>研究室エントリー</title>
+    <style>
+        body {
+            width: 400px;
+            font-family: sans-serif;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        h1,
+        h2,
+        h3,
+        p {
+            margin: 0;
+            padding: 0;
+        }
+
+        h2 {
+            border-bottom: 2px solid #eee;
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+            margin-top: 10px;
+        }
+
+        h3 {
+            margin-bottom: 5px;
+            font-size: 1em;
+        }
+
+        p {
+            font-size: 0.8em;
+            color: #555;
+            margin-bottom: 10px;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+            max-height: 150px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+        }
+
+        li {
+            padding: 8px;
+            border-bottom: 1px solid #ccc;
+            cursor: pointer;
+        }
+
+        li:hover {
+            background-color: #f0f0f0;
+        }
+
+        button {
+            padding: 10px 15px;
+            cursor: pointer;
+            border: 1px solid #ccc;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+        }
+
+        button:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        button:hover:not(:disabled) {
+            background-color: #e9e9e9;
+        }
+
+        input[type="email"],
+        input[type="password"],
+        input[type="text"] {
+            width: 95%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        #main-view {
+            padding: 10px;
+        }
+
+        #login-view {
+            padding: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="login-view">
+        <h2>ログイン</h2>
+        <input type="email" id="login-email" placeholder="メールアドレス" required>
+        <br><br>
+        <input type="password" id="login-password" placeholder="パスワード" required>
+        <br><br>
+        <input type="password" id="login-token" placeholder="認証トークン" required>
+        <br><br>
+        <button id="login-button">ログイン</button>
+        <p id="login-error" style="color: red;"></p>
+    </div>
+
+    <div id="main-view" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <p style="font-size: 0.9em;"><span id="user-email-display"></span>でログイン中</p>
+            <button id="logout-button">ログアウト</button>
+        </div>
+        <hr>
+
+        <div class="container">
+            <div class="section" id="lab-entry-section">
+                <h2>研究室エントリー</h2>
+                <h3>エントリー可能な研究室</h3>
+                <ul id="lab-list"></ul>
+                <button id="submit-button" disabled>この研究室にエントリーする</button>
+                <hr style="margin-top: 20px;">
+                <h3>あなたのエントリー状況</h3>
+                <p id="entry-status"></p>
+            </div>
+
+            <div class="section" id="gpa-calc-section">
+                <h2>特殊GPA計算</h2>
+
+                <div class="form-group">
+                    <h3>計算＆送信</h3>
+                    <p>成績ページでこのボタンを押してください。</p>
+                    <button id="send-special-gpa-button">特殊GPAを計算・送信</button>
+                </div>
+                <p><strong>計算結果:</strong> <span id="special-gpa-display">-</span></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="p.js"></script>
+</body>
+
+</html>
