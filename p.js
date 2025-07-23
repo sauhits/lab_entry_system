@@ -1,3 +1,4 @@
+// Firebase関連の機能をインポート
 import { db, auth } from "./firebase-config.js";
 import {
   collection,
@@ -16,19 +17,21 @@ import {
 } from "firebase/auth";
 
 document.addEventListener("DOMContentLoaded", () => {
+  // HTML要素の取得
   const loginView = document.getElementById("login-view");
   const mainView = document.getElementById("main-view");
   const loginButton = document.getElementById("login-button");
 
+  // --- ログイン処理 ---
   loginButton.addEventListener("click", async () => {
     const loginEmail = document.getElementById("login-email");
     const loginPassword = document.getElementById("login-password");
-    const loginToken = document.getElementById("login-token");
+    const loginTokenInput = document.getElementById("login-token");
     const loginError = document.getElementById("login-error");
 
     const email = loginEmail.value;
     const password = loginPassword.value;
-    const token = loginToken.value;
+    const token = loginTokenInput.value;
     loginError.textContent = "";
 
     if (!email || !password || !token) {
@@ -42,7 +45,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const docSnap = await getDoc(tokenDocRef);
 
       if (docSnap.exists() && docSnap.data().value === token) {
-        console.log("トークン認証成功。ログインを完了します。");
+        console.log("トークン認証成功。");
       } else {
         throw new Error("Invalid token");
       }
@@ -56,6 +59,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // --- 認証状態の監視 ---
   onAuthStateChanged(auth, (user) => {
     if (user) {
       loginView.style.display = "none";
@@ -67,268 +71,50 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // --- メイン機能の初期化 ---
   function initializeMainFeatures(user) {
+    console.log(`${user.email} (${user.uid}) のための機能を開始します。`);
+
+    // HTML要素の取得
     const userEmailDisplay = document.getElementById("user-email-display");
     const logoutButton = document.getElementById("logout-button");
     const labList = document.getElementById("lab-list");
     const submitButton = document.getElementById("submit-button");
     const entryStatus = document.getElementById("entry-status");
-    const sendSpecialGpaButton = document.getElementById(
-      "send-special-gpa-button"
-    );
-    const specialGpaDisplay = document.getElementById("special-gpa-display");
+
     let selectedLabId = null;
     let selectedLabName = null;
 
     userEmailDisplay.textContent = user.email;
     logoutButton.addEventListener("click", () => signOut(auth));
 
-    sendSpecialGpaButton.addEventListener("click", () => {
-      sendSpecialGpaButton.disabled = true;
-      specialGpaDisplay.textContent = "成績データ取得中...";
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        const activeTab = tabs[0];
-        const targetUrl =
-          "https://gakujo.shizuoka.ac.jp/lcu-web/SC_10004B00_01";
-        if (activeTab.url !== targetUrl) {
-          alert("この機能は大学の成績ページで実行してください。");
-          specialGpaDisplay.textContent = "-";
-          sendSpecialGpaButton.disabled = false;
-          return;
-        }
-
-        specialGpaDisplay.textContent = "ページをリロード中...";
-        const listener = (tabId, changeInfo, tab) => {
-          if (tabId === activeTab.id && changeInfo.status === "complete") {
-            chrome.tabs.onUpdated.removeListener(listener);
-
-            specialGpaDisplay.textContent = "成績データ取得中...";
-
-            chrome.tabs.sendMessage(
-              activeTab.id,
-              { action: "scrapeGrades" },
-              async (response) => {
-                if (
-                  chrome.runtime.lastError ||
-                  !response ||
-                  !response.success
-                ) {
-                  alert(
-                    response?.message || "成績データの取得に失敗しました。"
-                  );
-                  console.error(
-                    "成績データ取得のエラー:",
-                    chrome.runtime.lastError || response
-                  );
-                  specialGpaDisplay.textContent = "-";
-                  sendSpecialGpaButton.disabled = false;
-                  return;
-                }
-
-                specialGpaDisplay.textContent = "計算・送信中...";
-                const grades = response.data;
-
-                try {
-                  const filesToHash = ["p.js", "c.js"];
-
-                  const fileContents = await Promise.all(
-                    filesToHash.map((file) =>
-                      fetch(chrome.runtime.getURL(file)).then((res) =>
-                        res.text()
-                      )
-                    )
-                  );
-
-                  const combinedSource = fileContents.join("");
-
-                  const sourceHash = await generateHash(combinedSource);
-
-                  const author_uid = user.uid;
-                  const specialGpaRef = collection(db, "special_gpa");
-                  const q = query(
-                    specialGpaRef,
-                    where("author_uid", "==", author_uid)
-                  );
-                  const querySnapshot = await getDocs(q);
-
-                  if (!querySnapshot.empty) {
-                    alert("このアカウントの特殊GPAは既に登録されています。");
-
-                    fetchSpecialGpaStatus();
-                    return;
-                  }
-
-                  const firstYearIds = [
-                    "76010050",
-                    "76010070",
-                    "76010010",
-                    "76010030",
-                    "76020090",
-                    "77451010",
-                    "77451020",
-                    "77453010",
-                    "77405020",
-                    "77405010",
-                  ];
-                  const secondYearIds = [
-                    "77401100",
-                    "77451070",
-                    "77451040",
-                    "77401130",
-                    "77401150",
-                    "77451080",
-                    "77401180",
-                    "77451100",
-                    "77451120",
-                    "77451110",
-                    "77453100",
-                    "76020110",
-                    "77403040",
-                    "77453050",
-                    "77453060",
-                    "77453070",
-                    "77453080",
-                    "77403030",
-                    "77453090",
-                    "77405090",
-                    "77405100",
-                    "77455020",
-                    "77455050",
-                    "77405290",
-                    "77455070",
-                    "77455080",
-                  ];
-                  const R_courseIds = [
-                    "76010050",
-                    "76010010",
-                    "76010030",
-                    "76020090",
-                    "77451010",
-                    "77451020",
-                    "77401100",
-                    "77451070",
-                    "77451040",
-                    "77401130",
-                    "77401150",
-                    "77451080",
-                    "77401180",
-                    "77451100",
-                    "77451120",
-                    "77451110",
-                  ];
-                  const RS_courseIds = [
-                    "76010070",
-                    "77453010",
-                    "77405020",
-                    "77453100",
-                    "76020110",
-                    "77403040",
-                    "77453050",
-                    "77453060",
-                    "77453070",
-                    "77453080",
-                    "77403030",
-                    "77453090",
-                  ];
-                  const S_courseIds = [
-                    "77405010",
-                    "77405090",
-                    "77405100",
-                    "77455020",
-                    "77455050",
-                    "77405290",
-                    "77455070",
-                    "77455080",
-                  ];
-
-                  const multi_firstYear = 1.2;
-                  const multi_secondYear = 1.4;
-                  const multi_R = 1.0;
-                  const multi_RS = 1.2;
-                  const multi_S = 1.4;
-                  let totalGp_credit = 0;
-                  let totalCredits = 0;
-                  grades.forEach((grade) => {
-                    let gp = grade.GP;
-                    let credit = grade.単位;
-
-                    if (firstYearIds.includes(grade.科目id)) {
-                      gp *= multi_firstYear;
-                      credits_multier += grade.単位;
-                    } else if (secondYearIds.includes(grade.科目id)) {
-                      gp *= multi_secondYear;
-                      credits_multier += grade.単位;
-                    }
-
-                    if (R_courseIds.includes(grade.科目id)) {
-                      gp *= multi_R;
-                    } else if (RS_courseIds.includes(grade.科目id)) {
-                      gp *= multi_RS;
-                    } else if (S_courseIds.includes(grade.科目id)) {
-                      gp *= multi_S;
-                    }
-                    console.log(`${grade.科目名}:  ${grade.GP} -> ${gp}`);
-                    totalCredits += credit;
-                    totalGp_credit += gp * credit;
-                  });
-                  const specialGpa = (
-                    ((totalGp_credit / totalCredits) * credits_multier) /
-                    63
-                  ).toFixed(3);
-                  console.log(
-                    `総単位数: ${totalCredits}, 特殊GPA: ${specialGpa}`
-                  );
-
-                  await addDoc(specialGpaRef, {
-                    author_uid: author_uid,
-                    specialGpa: parseFloat(specialGpa),
-                    submittedAt: serverTimestamp(),
-                    sec_hash: sourceHash,
-                  });
-
-                  specialGpaDisplay.textContent = specialGpa;
-                  alert("特殊GPAの計算と送信が完了しました！");
-                  fetchSpecialGpaStatus();
-                } catch (error) {
-                  console.error("特殊GPA処理でエラー:", error);
-                  specialGpaDisplay.textContent = "処理に失敗しました";
-                  alert("データベースへの書き込み中にエラーが発生しました。");
-                  sendSpecialGpaButton.disabled = false;
-                }
-              }
-            );
-          }
-        };
-
-        chrome.tabs.onUpdated.addListener(listener);
-
-        chrome.tabs.reload(activeTab.id);
-      });
-    });
-
+    // --- 研究室エントリーボタンの処理 ---
     submitButton.addEventListener("click", async () => {
-      if (!selectedLabId) return;
+      if (!selectedLabId) {
+        alert("研究室を選択してください。");
+        return;
+      }
+      if (
+        !confirm(`「${selectedLabName}」にエントリーします。よろしいですか？`)
+      ) {
+        return;
+      }
+
       try {
         const entriesRef = collection(db, "entries");
         const q = query(entriesRef, where("author_uid", "==", user.uid));
-        const querySnapshot = await getDocs(q);
-
-        if (!querySnapshot.empty) {
+        if (!(await getDocs(q)).empty) {
           alert("すでにエントリー済みです。一人一件しかエントリーできません。");
           return;
         }
 
         const filesToHash = ["p.js", "c.js"];
-
         const fileContents = await Promise.all(
           filesToHash.map((file) =>
             fetch(chrome.runtime.getURL(file)).then((res) => res.text())
           )
         );
-
-        const combinedSource = fileContents.join("");
-
-        const sourceHash = await generateHash(combinedSource);
+        const sourceHash = await generateHash(fileContents.join(""));
 
         await addDoc(entriesRef, {
           author_uid: user.uid,
@@ -338,15 +124,113 @@ document.addEventListener("DOMContentLoaded", () => {
           createdAt: serverTimestamp(),
           sec_hash: sourceHash,
         });
+
         alert("エントリーしました！");
         fetchEntryStatus();
       } catch (error) {
-        console.error("エントリー処理でエラー:", error);
+        console.error("エントリー処理エラー:", error);
         alert("エントリーに失敗しました。");
       }
     });
 
+    // --- GPA整合性チェックとデータ読み込みの実行 ---
+    async function checkGpaConsistencyAndLoadData() {
+      // 研究室リストとエントリー状況は並行して取得開始
+      fetchLabs();
+      fetchEntryStatus();
+
+      const gpaDisplay = document.getElementById("user-gpa-display");
+      gpaDisplay.textContent = "GPAを確認中...";
+
+      // Promise A: Firestoreから登録済みGPAを取得
+      const fetchStoredGpa = async () => {
+        const specialGpaRef = collection(db, "special_gpa");
+        const q = query(specialGpaRef, where("author_uid", "==", user.uid));
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty) {
+          return querySnapshot.docs[0].data().specialGpa;
+        }
+        return null; // 見つからなければ null
+      };
+
+      // Promise B: 現在のページからGPAを計算
+      const calculateLiveGpa = () => {
+        return new Promise((resolve) => {
+          chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            const activeTab = tabs[0];
+            if (
+              activeTab.url !==
+              "https://gakujo.shizuoka.ac.jp/lcu-web/SC_10004B00_01"
+            ) {
+              console.log(
+                "成績ページではないため、GPAの動的計算はスキップします。"
+              );
+              return resolve(null);
+            }
+
+            const listener = (tabId, changeInfo) => {
+              if (tabId === activeTab.id && changeInfo.status === "complete") {
+                chrome.tabs.onUpdated.removeListener(listener);
+                chrome.tabs.sendMessage(
+                  activeTab.id,
+                  { action: "scrapeGrades" },
+                  (response) => {
+                    if (response && response.success) {
+                      const { specialGpa } = calculateGpasAndDetails(
+                        response.data
+                      );
+                      resolve(specialGpa);
+                    } else {
+                      console.error(
+                        "成績の取得に失敗したため、GPA計算を中断しました。"
+                      );
+                      resolve(null);
+                    }
+                  }
+                );
+              }
+            };
+            chrome.tabs.onUpdated.addListener(listener);
+            chrome.tabs.reload(activeTab.id);
+          });
+        });
+      };
+
+      // --- 両方の処理を並行実行し、完了後に比較 ---
+      try {
+        const [storedGpa, liveGpa] = await Promise.all([
+          fetchStoredGpa(),
+          calculateLiveGpa(),
+        ]);
+
+        // 表示するGPAは常にFirestoreに登録済みの値
+        if (storedGpa !== null) {
+          gpaDisplay.textContent = storedGpa.toFixed(3);
+        } else {
+          gpaDisplay.textContent = "未登録";
+        }
+
+        // 両方のGPAが取得できた場合のみ、差分をチェック
+        if (storedGpa !== null && liveGpa !== null) {
+          if (Math.abs(storedGpa - liveGpa) >= 0.2) {
+            alert(
+              `警告: 登録済みのGPAと現在の成績に差があります。\n\n` +
+                `登録済みGPA: ${storedGpa.toFixed(3)}\n` +
+                `現在の計算値: ${liveGpa.toFixed(3)}\n\n` +
+                `再登録が必要な場合は、管理者に連絡してください。`
+            );
+            signOut(auth);
+          }
+        }
+      } catch (error) {
+        console.error("GPA整合性チェック中にエラー:", error);
+        gpaDisplay.textContent = "取得エラー";
+      }
+    }
+
+    // --- エントリー状況の確認 ---
     async function fetchEntryStatus() {
+      // (この関数に変更はありません)
       const entriesRef = collection(db, "entries");
       const q = query(entriesRef, where("author_uid", "==", user.uid));
       const querySnapshot = await getDocs(q);
@@ -359,23 +243,28 @@ document.addEventListener("DOMContentLoaded", () => {
         submitButton.disabled = true;
         submitButton.textContent = "エントリー済み";
       } else {
-        entryStatus.textContent = "エントリー情報がありません";
+        entryStatus.textContent = "未エントリーです";
         labList.style.pointerEvents = "auto";
         labList.style.opacity = 1;
         submitButton.textContent = "この研究室にエントリーする";
-        submitButton.disabled = true;
       }
     }
 
+    // --- 研究室リストの取得・表示 ---
     async function fetchLabs() {
-      labList.textContent = "研究室リストを読み込み中...";
+      // (この関数に変更はありません)
+      labList.textContent = "";
+      const liLoading = document.createElement("li");
+      liLoading.textContent = "研究室リストを読み込み中...";
+      labList.appendChild(liLoading);
+
       try {
         const labsCollectionRef = collection(db, "labs");
         const querySnapshot = await getDocs(labsCollectionRef);
 
         const labs = [];
         querySnapshot.forEach((doc) => {
-          labs.push(doc.data());
+          labs.push({ id: doc.id, ...doc.data() });
         });
 
         labList.innerHTML = "";
@@ -383,16 +272,18 @@ document.addEventListener("DOMContentLoaded", () => {
         labs.forEach((lab) => {
           if (lab.isEntryOpen) {
             const li = document.createElement("li");
-            if (lab.capacity) {
-              li.textContent = `${lab.name} (定員: ${lab.capacity}名)`;
-            } else {
-              li.textContent = lab.name;
-            }
+            li.textContent = lab.capacity
+              ? `${lab.name} (定員: ${lab.capacity}名)`
+              : lab.name;
+            li.dataset.labId = lab.id;
+
             li.addEventListener("click", () => {
               document.querySelectorAll("#lab-list li").forEach((el) => {
                 el.style.backgroundColor = "";
+                el.style.fontWeight = "normal";
               });
               li.style.backgroundColor = "#e0e0e0";
+              li.style.fontWeight = "bold";
               selectedLabId = lab.id;
               selectedLabName = lab.name;
               submitButton.disabled = false;
@@ -402,44 +293,158 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         if (labList.innerHTML === "") {
-          labList.textContent = "エントリー可能な研究室はありません。";
+          liLoading.textContent = "エントリー可能な研究室はありません。";
+          labList.appendChild(liLoading);
         }
       } catch (error) {
-        console.error("Firebaseからの研究室リスト取得エラー:", error);
-        labList.textContent = "リストの読み込みに失敗しました。";
+        console.error("研究室リスト取得エラー:", error);
+        liLoading.textContent = "リストの読み込みに失敗しました。";
+        labList.innerHTML = "";
+        labList.appendChild(liLoading);
       }
     }
 
-    async function fetchSpecialGpaStatus() {
-      const specialGpaRef = collection(db, "special_gpa");
-      const q = query(specialGpaRef, where("author_uid", "==", user.uid));
-      const querySnapshot = await getDocs(q);
+    // --- GPA計算ロジック (再追加) ---
+    function calculateGpasAndDetails(grades) {
+      const YEAR_MULTIPLIERS = { first: 1.1, second: 1.2 };
+      const COURSE_TYPE_MULTIPLIERS = {
+        required: 1.0,
+        requiredSelective: 1.1,
+        selective: 1.2,
+      };
+      const firstYearIds = [
+        "76010050",
+        "76010070",
+        "76010010",
+        "76010030",
+        "76020090",
+        "77451010",
+        "77451020",
+        "77453010",
+        "77405020",
+        "77405010",
+      ];
+      const secondYearIds = [
+        "77401100",
+        "77451070",
+        "77451040",
+        "77401130",
+        "77401150",
+        "77451080",
+        "77401180",
+        "77451100",
+        "77451120",
+        "77451110",
+        "77453100",
+        "76020110",
+        "77403040",
+        "77453050",
+        "77453060",
+        "77453070",
+        "77453080",
+        "77403030",
+        "77453090",
+        "77405090",
+        "77405100",
+        "77455020",
+        "77455050",
+        "77405290",
+        "77455070",
+        "77455080",
+      ];
+      const R_courseIds = [
+        "76010050",
+        "76010010",
+        "76010030",
+        "76020090",
+        "77451010",
+        "77451020",
+        "77401100",
+        "77451070",
+        "77451040",
+        "77401130",
+        "77401150",
+        "77451080",
+        "77401180",
+        "77451100",
+        "77451120",
+        "77451110",
+      ];
+      const RS_courseIds = [
+        "76010070",
+        "77453010",
+        "77405020",
+        "77453100",
+        "76020110",
+        "77403040",
+        "77453050",
+        "77453060",
+        "77453070",
+        "77453080",
+        "77403030",
+        "77453090",
+      ];
+      const S_courseIds = [
+        "77405010",
+        "77405090",
+        "77405100",
+        "77455020",
+        "77455050",
+        "77405290",
+        "77455070",
+        "77455080",
+      ];
 
-      if (!querySnapshot.empty) {
-        const gpaData = querySnapshot.docs[0].data();
-        specialGpaDisplay.textContent = gpaData.specialGpa.toFixed(3);
-        sendSpecialGpaButton.disabled = true;
-        sendSpecialGpaButton.textContent = "送信済み";
-      } else {
-        specialGpaDisplay.textContent = "-";
-        sendSpecialGpaButton.disabled = false;
-        sendSpecialGpaButton.textContent = "特殊GPAを計算・送信";
-      }
+      let weightedGpSum = 0;
+      let totalEarnedCredits = 0;
+
+      grades.forEach((grade) => {
+        const originalGp = grade.GP;
+        const credit = grade.単位;
+        if (isNaN(originalGp) || isNaN(credit) || credit === 0) return;
+
+        let weightedGp = originalGp;
+        if (firstYearIds.includes(grade.科目id)) {
+          weightedGp *= YEAR_MULTIPLIERS.first;
+        } else if (secondYearIds.includes(grade.科目id)) {
+          weightedGp *= YEAR_MULTIPLIERS.second;
+        }
+
+        if (R_courseIds.includes(grade.科目id)) {
+          weightedGp *= COURSE_TYPE_MULTIPLIERS.required;
+          totalEarnedCredits += credit;
+        } else if (RS_courseIds.includes(grade.科目id)) {
+          weightedGp *= COURSE_TYPE_MULTIPLIERS.requiredSelective;
+          if (originalGp > 0) {
+            totalEarnedCredits += credit;
+          }
+        } else if (S_courseIds.includes(grade.科目id)) {
+          weightedGp *= COURSE_TYPE_MULTIPLIERS.selective;
+          if (originalGp > 0) {
+            totalEarnedCredits += credit;
+          }
+        } else {
+          totalEarnedCredits += credit;
+        }
+        weightedGpSum += weightedGp * credit;
+      });
+
+      if (totalEarnedCredits === 0) return { specialGpa: 0 };
+
+      const specialGpa = weightedGpSum / totalEarnedCredits;
+      return { specialGpa };
     }
 
+    // --- ハッシュ生成関数 ---
     async function generateHash(str) {
       const encoder = new TextEncoder();
       const data = encoder.encode(str);
       const hashBuffer = await crypto.subtle.digest("SHA-256", data);
       const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const hashHex = hashArray
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join("");
-      return hashHex;
+      return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
     }
 
-    fetchLabs();
-    fetchEntryStatus();
-    fetchSpecialGpaStatus();
+    // --- 初期化処理の呼び出し ---
+    checkGpaConsistencyAndLoadData();
   }
 });

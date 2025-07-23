@@ -25,7 +25,7 @@ module.exports = {
         stringArray: true,
         StringArrayEncoding: ["rc4"],
         stringArrayThreshold: 1,
-        disableConsoleOutput: true,
+        disableConsoleOutput:false,
         identifierNamesGenerator: "mangled",
         selfDefending: true,
       },
