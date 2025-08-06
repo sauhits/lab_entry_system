@@ -17,7 +17,6 @@ import {
 } from "firebase/auth";
 
 document.addEventListener("DOMContentLoaded", () => {
-  // HTML要素の取得
   const loginView = document.getElementById("login-view");
   const mainView = document.getElementById("main-view");
   const loginButton = document.getElementById("login-button");
