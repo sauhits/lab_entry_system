@@ -27,7 +27,7 @@ jobs:
         uses: peaceiris/actions-gh-pages@v4
         with:
           personal_token: ${{ secrets.DEPLOY_PAT }}
-          external_repository: sauhits/lab_assign_system
+          external_repository: XXXXXX
           publish_branch: main
           publish_dir: ./dist
           force_orphan: true
