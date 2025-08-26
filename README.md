@@ -2,16 +2,29 @@
 
 # 2025 年度研究室配属システム
 
-<img src="https://img.shields.io/badge/node-v22.14.0-green.svg">
-<img src="https://img.shields.io/badge/npm-v11.3.0-green.svg">
+<img src="https://img.shields.io/badge/node-v22.14.0-green.svg"><img src="https://img.shields.io/badge/npm-v11.3.0-green.svg">
 
 ## 目次
 
-1. [名称](#名称)
-1. [技術スタック](#技術スタック)
-1. [firebase-firestore](#firebase-firestore)
-1. [機能仕様](#機能仕様)
-1. [運用方法](#運用方法)
+├ [📛 名称](#名称)\
+├ [🔧 技術スタック](#技術スタック)\
+｜　 ├ [フロントエンド](#フロントエンド)\
+｜　 ├ [バックエンド](#バックエンド)\
+｜　 └ [環境](#環境)\
+├ [📦firebase-firestore](#firebase-firestore)\
+｜　 ├ [labs コレクション](#labs-コレクション)\
+｜　 ├ [entries コレクション](#entries-コレクション)\
+｜　 └ [special_gpa コレクション](#special_gpa-コレクション)\
+├ [⚙️ 機能仕様](#機能仕様)\
+｜　 ├ [システム全体について](#システム全体について)\
+｜　 ├ [認証について](#認証について)\
+｜　 ｜ ├ [教員保持 DB](#教員保持-db)\
+｜　 ｜ └ [世話人保持 DB](#世話人保持-db)\
+｜　 ├ [特殊 GPA の算出について](#特殊-gpa-の算出について)\
+｜　 └ [セキュリティについて](#セキュリティについて)\
+｜　　 ├ [クライアント側](#クライアント側)\
+｜　　 └ [ホスト側](#ホスト側)\
+└ [💻 運用方法](#運用方法)
 
 ## 名称
 
@@ -19,23 +32,28 @@
 
 ## 技術スタック
 
-- フロントエンド
+- ### フロントエンド
+
   <!-- javascript -->
   <img src="https://shields.io/badge/JavaScript-F7DF1E?logo=JavaScript&logoColor=000&style=for-the-badge">
   <!-- html -->
   <img src="https://shields.io/badge/HTML-f06529?logo=html5&logoColor=white&labelColor=f06529&style=for-the-badge">
-- バックエンド
+
+- ### バックエンド
+
   <!-- firebase -->
   <img src="https://img.shields.io/badge/firebase-ffca28?style=for-the-badge&logo=firebase&logoColor=black">
-- 環境
-    <!-- nodejs -->
-    <img src="https://img.shields.io/badge/Node.js-000000.svg?logo=node.js&style=for-the-badge">
-    <!-- webpack -->
-    <img src="https://img.shields.io/badge/-Webpack-8DD6F9?style=for-the-badge&logo=webpack&logoColor=white">
-    <!-- chromium -->
-    <img src="https://img.shields.io/badge/Chromium-ffffff.svg?logo=googlechrome&style=for-the-badge">
-    <!-- google gemini -->
-    <img src="https://img.shields.io/badge/google gemini-ffffff.svg?logo=googlegemini&style=for-the-badge&logoColor=blue">
+
+- ### 環境
+
+  <!-- nodejs -->
+  <img src="https://img.shields.io/badge/Node.js-000000.svg?logo=node.js&style=for-the-badge">
+  <!-- webpack -->
+  <img src="https://img.shields.io/badge/-Webpack-8DD6F9?style=for-the-badge&logo=webpack&logoColor=white">
+  <!-- chromium -->
+  <img src="https://img.shields.io/badge/Chromium-ffffff.svg?logo=googlechrome&style=for-the-badge">
+  <!-- google gemini -->
+  <img src="https://img.shields.io/badge/google gemini-ffffff.svg?logo=googlegemini&style=for-the-badge&logoColor=blue">
 
 ## Firebase-firestore
 
@@ -70,7 +88,7 @@
 
 ### システム全体について
 
-本システムは Chromium ベースのブラウザを対象とした拡張機能として提供される．  
+本システムは Chromium ベースのブラウザを対象としたクライアント直結型の拡張機能として提供される．  
 データの保存及び管理には Google Firebase が利用され，認証も同様である．
 
 ### 認証について
@@ -156,18 +174,9 @@
 | サイバーフィジカルシステム基礎 | 77455070 | 選択 | 2 |
 | 情報と法 | 77455080 | 選択 | 2 |
 
-## 運用方法
+### セキュリティについて
 
-このリポジトリを`git fork`し，ローカルにて`npm install`を実行する． \
-改変を行ったら`npm run build`にてビルドし，`/dist/`内のファイルを拡張機能として読み込む． \
-`firebase-config.js`にて任意の firebase の認証情報を記載すること． \
-`git push origin main`にて GitHub-Workflow が発火し，システム公開用のリポジトリに自動ビルドされる．
-
-## セキュリティについて
-
-当システムはクライアント直結型である．
-
-### クライアント側
+#### クライアント側
 
 クライアント側にて，エントリ―の際に特殊 GPA チェックを行い，登録情報と 0.2 以上の差異が生じる場合にはエントリーを禁止している．
 
@@ -216,3 +225,10 @@ service cloud.firestore {
 
 - DOM 対策
   DOM(Document Object Model)の上書き実行による
+
+## 運用方法
+
+このリポジトリを`git fork`し，ローカルにて`npm install`を実行する． \
+改変を行ったら`npm run build`にてビルドし，`/dist/`内のファイルを拡張機能として読み込む． \
+`firebase-config.js`にて任意の firebase の認証情報を記載すること． \
+`git push origin main`にて GitHub-Workflow が発火し，システム公開用のリポジトリに自動ビルドされる．
