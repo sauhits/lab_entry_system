@@ -141,7 +141,6 @@ document.addEventListener("DOMContentLoaded", () => {
       const gpaDisplay = document.getElementById("user-gpa-display");
       gpaDisplay.textContent = "GPAを確認中...";
 
-      // Promise A: Firestoreから登録済みGPAを取得
       const fetchStoredGpa = async () => {
         const specialGpaRef = collection(db, "special_gpa");
         const q = query(specialGpaRef, where("author_uid", "==", user.uid));
@@ -149,10 +148,9 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!querySnapshot.empty) {
           return querySnapshot.docs[0].data().specialGpa;
         }
-        return null; // 見つからなければ null
+        return null;
       };
 
-      // Promise B: 現在のページからGPAを計算
       const calculateLiveGpa = () => {
         return new Promise((resolve) => {
           chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {

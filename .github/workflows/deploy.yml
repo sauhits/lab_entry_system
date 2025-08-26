@@ -4,43 +4,32 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch: # 手動実行も可能にする
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      # 1. 開発リポジトリのコードをチェックアウト
       - name: Checkout dev repository
         uses: actions/checkout@v4
 
-      # 2. Node.js環境のセットアップ
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22.16.0'
-          cache: 'npm'
+          node-version: "22.16.0"
+          cache: "npm"
 
-      # 3. 依存関係のインストールとビルド
       - name: Install and Build
         run: |
           npm install
           npm run build
-
-      # 4. 成果物を成果物リポジトリにプッシュ
       - name: Deploy to release repository
         uses: peaceiris/actions-gh-pages@v4
         with:
-          # 手順2で登録したPATを使用
           personal_token: ${{ secrets.DEPLOY_PAT }}
-          # プッシュ先の外部リポジトリを指定
           external_repository: sauhits/lab_assign_system
-          # プッシュ先のブランチを指定
           publish_branch: main
-          # プッシュするディレクトリを指定
           publish_dir: ./dist
-          # 履歴が混ざらないように毎回クリーンな状態でプッシュ
           force_orphan: true
-          # コミットのユーザー情報を設定
-          user_name: 'github-actions[bot]'
-          user_email: 'github-actions[bot]@users.noreply.github.com'
+          user_name: "github-actions[bot]"
+          user_email: "github-actions[bot]@users.noreply.github.com"

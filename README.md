@@ -1,27 +1,43 @@
+<div id="top"></div>
+
 # 2025 年度研究室配属システム
+
+<img src="https://img.shields.io/badge/node-v22.14.0-green.svg">
+<img src="https://img.shields.io/badge/npm-v11.3.0-green.svg">
+
+## 目次
+
+1. [名称](#名称)
+1. [技術スタック](#技術スタック)
+1. [firebase-firestore](#firebase-firestore)
+1. [機能仕様](#機能仕様)
+1. [運用方法](#運用方法)
 
 ## 名称
 
-2025 年度静岡大学情報学部情報科学科 3 年生を対象とする勾配付き特殊 GPA を利用した研究室配属システム  
-以下，配属システムとする
+2025 年度静岡大学情報学部情報科学科 3 年生を対象とする勾配付き特殊 GPA を利用した研究室配属システム
 
 ## 技術スタック
 
-### フロントエンド
+- フロントエンド
+  <!-- javascript -->
+  <img src="https://shields.io/badge/JavaScript-F7DF1E?logo=JavaScript&logoColor=000&style=for-the-badge">
+  <!-- html -->
+  <img src="https://shields.io/badge/HTML-f06529?logo=html5&logoColor=white&labelColor=f06529&style=for-the-badge">
+- バックエンド
+  <!-- firebase -->
+  <img src="https://img.shields.io/badge/firebase-ffca28?style=for-the-badge&logo=firebase&logoColor=black">
+- 環境
+    <!-- nodejs -->
+    <img src="https://img.shields.io/badge/Node.js-000000.svg?logo=node.js&style=for-the-badge">
+    <!-- webpack -->
+    <img src="https://img.shields.io/badge/-Webpack-8DD6F9?style=for-the-badge&logo=webpack&logoColor=white">
+    <!-- chromium -->
+    <img src="https://img.shields.io/badge/Chromium-ffffff.svg?logo=googlechrome&style=for-the-badge">
+    <!-- google gemini -->
+    <img src="https://img.shields.io/badge/google gemini-ffffff.svg?logo=googlegemini&style=for-the-badge&logoColor=blue">
 
-HTML,CSS,JavaScript
-
-### バックエンド
-
-Firebase
-
-### 環境
-
-Node.js,npm,webpack
-
-<div style="page-break-before:always"></div>
-
-## Firestore
+## Firebase-firestore
 
 ### labs コレクション
 
@@ -49,8 +65,6 @@ Node.js,npm,webpack
 | author_uid   | string    | ユーザの Firebase 認証 ID |
 | specialGpa   | number    | 特殊 GPA                  |
 | submittedAt  | timestamp | 送信日時                  |
-
-<div style="page-break-before:always"></div>
 
 ## 機能仕様
 
@@ -93,7 +107,7 @@ Node.js,npm,webpack
 
 研究室配属を目的とした特定科目における倍率付与型 GPA（以下，特殊 GPA とする）は以下によって定義される．  
 特定科目の GP を対象に独自の倍率を付与する．  
-科目情報は 2023 年度の README を参照した．
+科目情報は [README2023](https://www.shizuoka.ac.jp/education/affairs/handbook/document/2023/2023_BA_7inf_1All_pub.pdf) を参照した．
 
 | 情報学部情報科学科専門科目 |      | 1 年度 | 2 年度 |
 | -------------------------- | ---- | ------ | ------ |
