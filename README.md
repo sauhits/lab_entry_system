@@ -2,12 +2,14 @@
 
 # 2025 年度研究室配属システム
 
-<img src="https://img.shields.io/badge/node-v22.14.0-green.svg"><img src="https://img.shields.io/badge/npm-v11.3.0-green.svg">
+<img src="https://img.shields.io/badge/node-v22.16.0-green.svg?logo=node.js">
+<img src="https://img.shields.io/badge/npm-v10.9.2-green.svg?logo=node.js">
 
 ## 目次
 
 - [📛 名称](#-名称)
 - [🔧 技術スタック](#-技術スタック)
+- [🪜 ディレクトリ構造](#-ディレクトリ構造)
 - [📦 firebase-firestore](#-firebase-firestore)
 - [⚙️ 機能仕様](#-機能仕様)
   - [💻 システム全体について](#-システム全体について)
@@ -28,27 +30,47 @@
 - ### フロントエンド
 
   <!-- javascript -->
-  <img src="https://shields.io/badge/JavaScript-F7DF1E?logo=JavaScript&logoColor=000&style=for-the-badge">
+  <img src="https://shields.io/badge/JavaScript-F7DF1E?logo=JavaScript&logoColor=black&style=for-the-badge">
   <!-- html -->
-  <img src="https://shields.io/badge/HTML-f06529?logo=html5&logoColor=white&labelColor=f06529&style=for-the-badge">
+  <img src="https://shields.io/badge/HTML-ffffff?logo=html5&logoColor=f06529&style=for-the-badge">
 
 - ### バックエンド
 
   <!-- firebase -->
-  <img src="https://img.shields.io/badge/firebase-ffca28?style=for-the-badge&logo=firebase&logoColor=black">
+  <img src="https://img.shields.io/badge/firebase-FFC400?style=for-the-badge&logo=firebase&logoColor=DD2C00">
 
 - ### 環境
 
   <!-- nodejs -->
   <img src="https://img.shields.io/badge/Node.js-5FA04E.svg?logo=node.js&style=for-the-badge&logoColor=white">
   <!-- webpack -->
-  <img src="https://img.shields.io/badge/-Webpack-8DD6F9?style=for-the-badge&logo=webpack&logoColor=white">
+  <img src="https://img.shields.io/badge/-Webpack-white?style=for-the-badge&logo=webpack&logoColor=8DD6F9">
   <!-- github actions -->
   <img src="https://img.shields.io/badge/githubactions-000000.svg?logo=githubactions&style=for-the-badge&logoColor=white">
   <!-- chromium -->
   <img src="https://img.shields.io/badge/Chromium-ffffff.svg?logo=googlechrome&style=for-the-badge">
   <!-- google gemini -->
   <img src="https://img.shields.io/badge/google gemini-ffffff.svg?logo=googlegemini&style=for-the-badge&logoColor=blue">
+
+## 🪜 ディレクトリ構造
+
+```
+.
+├── README.md
+├── doc_img/
+├── node_modules/
+├── dist/
+│   ├── c.js
+│   ├── index.html
+│   ├── manifest.json
+│   ├── p.js
+│   └── p.js.LICENSE.txt
+├── c.js
+├── p.js
+├── firebase-config.js
+├── index.html
+└── manifest.json
+```
 
 ## 📦 Firebase-firestore
 
@@ -85,6 +107,15 @@
 | author_uid   | string    | ユーザの Firebase 認証 ID |
 | specialGpa   | number    | 特殊 GPA                  |
 | submittedAt  | timestamp | 送信日時                  |
+
+</details>
+
+<details>
+<summary>🛡️ auth_token コレクション</summary>
+
+| フィールド名 | 型     | 説明                     |
+| ------------ | ------ | ------------------------ |
+| token        | number | 当日の出席確認用トークン |
 
 </details>
 
@@ -268,7 +299,7 @@ npm install
 
 <a href="https://console.firebase.google.com/u/0/?hl=ja">
   <!-- firebase -->
-  <img src="https://img.shields.io/badge/firebase-ffca28?style=for-the-badge&logo=firebase&logoColor=black">
+  <img src="https://img.shields.io/badge/firebase-FFC400?style=for-the-badge&logo=firebase&logoColor=DD2C00">
 </a>
 
 上記リンクより Firebase ヘアクセスし，Firebase プロジェクトを新規作成する．
@@ -325,3 +356,38 @@ npm run build
 git clone {任意の公開用リポジトリ}
 # もしくはbuild後の/dist/
 ```
+
+### 2. 任意のブラウザにて拡張機能を取り込む
+
+例として Edge を用いる．\
+※ Chromium ベースのブラウザのみ対応していることに注意
+
+`開発者モードの有効化 > 展開して読み込み > ビルドしたソースコード`
+
+<img src="./doc_img/img2.png">
+
+### 3. 拡張機能より諸機能の実行
+
+#### 3.1 当拡張機能は LiveCampus U の成績情報ページでのみ動作する
+
+<a href="https://gakujo.shizuoka.ac.jp/lcu-web/SC_10004B00_01">
+<img src="https://img.shields.io/badge/LiveCampus U-成績情報-FABE00?labelColor=2A6FB7&style=for-the-badge"></a>
+
+#### 3.2 ログインには管理者からの認証情報が必要である
+
+以下の情報が必要である．
+
+- 認証メールアドレス
+- 認証パスワード
+- 認証トークン
+  <img src="./doc_img/img3.png">
+
+#### 3.3 事前に登録した特殊成績を確認する
+
+ログイン後にユーザ ID と特殊 GPA の値が正しく参照されているか確認する．
+<img src="./doc_img/img4.png">
+
+#### 3.4 任意の研究室を選択してエントリーする
+
+エントリー可能な研究室一覧より任意の研究室を選択する．
+<img src="./doc_img/img5.png">
