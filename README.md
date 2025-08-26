@@ -3,7 +3,9 @@
 # 2025 年度研究室配属システム
 
 <img src="https://img.shields.io/badge/node-v22.16.0-green.svg?logo=node.js">
+
 <img src="https://img.shields.io/badge/npm-v10.9.2-green.svg?logo=node.js">
+
 [![Build and Deploy to Private Release Repo](https://github.com/sauhits/lab_entry_system/actions/workflows/deploy.yml/badge.svg?branch=main)](https://github.com/sauhits/lab_entry_system/actions/workflows/deploy.yml)
 
 ## 目次
@@ -392,4 +394,5 @@ git clone {任意の公開用リポジトリ}
 
 エントリー可能な研究室一覧より任意の研究室を選択する．
 <img src="./doc_img/img5.png">
+
 
