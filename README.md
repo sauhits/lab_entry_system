@@ -12,11 +12,12 @@
 - [⚙️ 機能仕様](#-機能仕様)
   - [💻 システム全体について](#-システム全体について)
   - [🔍 認証について](#-認証について)
-  - [⚡ 特殊 GPA の算出について](#特殊-gpa-の算出について)
-  - [🛡️ セキュリティについて](#セキュリティについて)
-    - [🎈 クライアント側](#クライアント側)
-    - [💡 ホスト側](#ホスト側)
-- [🚀 運用方法](#運用方法)
+  - [⚡ 特殊 GPA の算出について](#-特殊-gpa-の算出について)
+  - [🛡️ セキュリティについて](#-セキュリティについて)
+    - [🎈 クライアント側](#-クライアント側)
+    - [💡 ホスト側](#-ホスト側)
+- [🚀 運用方法](#-運用方法)
+- [🚀 利用方法](#-利用方法)
 
 ## 📛 名称
 
@@ -39,9 +40,11 @@
 - ### 環境
 
   <!-- nodejs -->
-  <img src="https://img.shields.io/badge/Node.js-000000.svg?logo=node.js&style=for-the-badge">
+  <img src="https://img.shields.io/badge/Node.js-5FA04E.svg?logo=node.js&style=for-the-badge&logoColor=white">
   <!-- webpack -->
   <img src="https://img.shields.io/badge/-Webpack-8DD6F9?style=for-the-badge&logo=webpack&logoColor=white">
+  <!-- github actions -->
+  <img src="https://img.shields.io/badge/githubactions-000000.svg?logo=githubactions&style=for-the-badge&logoColor=white">
   <!-- chromium -->
   <img src="https://img.shields.io/badge/Chromium-ffffff.svg?logo=googlechrome&style=for-the-badge">
   <!-- google gemini -->
@@ -296,3 +299,29 @@ npm run build
 ```
 
 ビルドすると`/dist/`にファイルが生成される．
+
+また，github actions を用意している．\
+当リポジトリに対して，`main`ブランチが更新された場合には`deploy.yml`にて指定した公開用リポジトリにビルドしてプッシュされる．
+
+```yml
+- name: Install and Build
+        run: |
+          npm install
+          npm run build
+- name: Deploy to release repository
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          personal_token: ${{ secrets.DEPLOY_PAT }}
+          external_repository: XXXXXX
+          publish_branch: main
+          publish_dir: ./dist
+```
+
+## 🚀 利用方法
+
+### 1. クライアントプログラムをローカルに用意する
+
+```
+git clone {任意の公開用リポジトリ}
+# もしくはbuild後の/dist/
+```
