@@ -129,6 +129,8 @@
 本システムは Chromium ベースのブラウザを対象としたクライアント直結型の拡張機能として提供される．  
 データの保存及び管理には Google Firebase が利用され，認証も同様である．
 
+![システム構成図](https://github.com/user-attachments/assets/f4aaf862-50df-413e-be92-e1be12bdfa0b)
+
 ## 🔍 認証について
 
 認証は admin によって登録されたメールアドレスとパスワードによって管理される．  
@@ -367,7 +369,7 @@ git clone {任意の公開用リポジトリ}
 
 `開発者モードの有効化 > 展開して読み込み > ビルドしたソースコード`
 
-<img src="./doc_img/img2.png">
+<img src="./doc_img/img2.png" width="350px">
 
 ## 3. 拡張機能より諸機能の実行
 
@@ -384,17 +386,20 @@ git clone {任意の公開用リポジトリ}
 - 認証パスワード
 - 認証トークン
 
-<img src="./doc_img/img3.png">
+<img src="./doc_img/img3.png" width="350px">
 
 ### 3.3 事前に登録した特殊成績を確認する
 
 ログイン後にユーザ ID と特殊 GPA の値が正しく参照されているか確認する．
-<img src="./doc_img/img4.png">
+
+<img src="./doc_img/img4.png" width="350px">
 
 ### 3.4 任意の研究室を選択してエントリーする
 
 エントリー可能な研究室一覧より任意の研究室を選択する．
-<img src="./doc_img/img5.png">
+
+<img src="./doc_img/img5.png" width="350px">
+
 
 
 
